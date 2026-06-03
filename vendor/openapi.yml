@@ -1,0 +1,2566 @@
+openapi: 3.1.0
+info:
+  title: Whop Mock Test Fixture
+  version: 1.0.0
+paths:
+  /companies:
+    get:
+      operationId: listCompanies
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyList"
+    post:
+      operationId: createCompany
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Company"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+  /companies/{id}:
+    get:
+      operationId: retrieveCompany
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+    patch:
+      operationId: updateCompany
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Company"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+  /members:
+    get:
+      operationId: listMembers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberList"
+  /members/{id}:
+    get:
+      operationId: retrieveMember
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+  /memberships:
+    get:
+      operationId: listMemberships
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipList"
+    post:
+      operationId: createMembership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Membership"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/search:
+    get:
+      operationId: searchMemberships
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipList"
+  /memberships/{id}:
+    get:
+      operationId: retrieveMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+    patch:
+      operationId: updateMembership
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Membership"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+    delete:
+      operationId: deleteMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/{id}/cancel:
+    post:
+      operationId: cancelMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/{id}/add_free_days:
+    post:
+      operationId: addFreeDaysMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/{id}/pause:
+    post:
+      operationId: pauseMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/{id}/resume:
+    post:
+      operationId: resumeMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/{id}/uncancel:
+    post:
+      operationId: uncancelMembership
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /payments:
+    get:
+      operationId: listPayments
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentList"
+    post:
+      operationId: createPayment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Payment"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /payments/search:
+    get:
+      operationId: searchPayments
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentList"
+  /payments/{id}:
+    get:
+      operationId: retrievePayment
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /payments/{id}/fees:
+    get:
+      operationId: listPaymentFees
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentFeeList"
+  /payments/{id}/refund:
+    post:
+      operationId: refundPayment
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /payments/{id}/retry:
+    post:
+      operationId: retryPayment
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /payments/{id}/void:
+    post:
+      operationId: voidPayment
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /refunds:
+    get:
+      operationId: listRefunds
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefundList"
+  /refunds/{id}:
+    get:
+      operationId: retrieveRefund
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Refund"
+  /setup_intents:
+    get:
+      operationId: listSetupIntents
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupIntentList"
+  /setup_intents/{id}:
+    get:
+      operationId: retrieveSetupIntent
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupIntent"
+  /invoices:
+    get:
+      operationId: listInvoices
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceList"
+    post:
+      operationId: createInvoice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invoice"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+  /invoices/search:
+    get:
+      operationId: searchInvoices
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceList"
+  /invoices/{id}:
+    get:
+      operationId: retrieveInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+    patch:
+      operationId: updateInvoice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Invoice"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+    delete:
+      operationId: deleteInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /invoices/{id}/mark_paid:
+    post:
+      operationId: markPaidInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /invoices/{id}/mark_uncollectible:
+    post:
+      operationId: markUncollectibleInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /invoices/{id}/void:
+    post:
+      operationId: voidInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /plans:
+    get:
+      operationId: listPlans
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlanList"
+    post:
+      operationId: createPlan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Plan"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+  /plans/{id}:
+    get:
+      operationId: retrievePlan
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+    patch:
+      operationId: updatePlan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Plan"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plan"
+    delete:
+      operationId: deletePlan
+      responses:
+        "200":
+          content:
+            application/json:
+                schema:
+                  type: boolean
+  /checkout_configurations:
+    get:
+      operationId: listCheckoutConfigurations
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutConfigurationList"
+    post:
+      operationId: createCheckoutConfiguration
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutConfigurationCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutConfiguration"
+  /checkout_configurations/{id}:
+    get:
+      operationId: retrieveCheckoutConfiguration
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutConfiguration"
+  /promo_codes:
+    get:
+      operationId: listPromoCodes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoCodeList"
+    post:
+      operationId: createPromoCode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromoCodeCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoCode"
+  /promo_codes/{id}:
+    get:
+      operationId: retrievePromoCode
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoCode"
+    delete:
+      operationId: deletePromoCode
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /products:
+    get:
+      operationId: listProducts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+    post:
+      operationId: createProduct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /products/{id}:
+    get:
+      operationId: retrieveProduct
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    patch:
+      operationId: updateProduct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /webhooks:
+    get:
+      operationId: listWebhooks
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookList"
+    post:
+      operationId: createWebhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookCreateResponse"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookCreateResponse"
+  /webhooks/{id}:
+    get:
+      operationId: retrieveWebhook
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+    patch:
+      operationId: updateWebhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Webhook"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Webhook"
+    delete:
+      operationId: deleteWebhook
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /events/{id}:
+    get:
+      operationId: retrieveEvent
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+  /payment_methods:
+    get:
+      operationId: listPaymentMethods
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethodList"
+    post:
+      operationId: createPaymentMethod
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethod"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethod"
+  /payment_methods/{id}:
+    get:
+      operationId: retrievePaymentMethod
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentMethod"
+  /account_links:
+    post:
+      operationId: createAccountLink
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountLinkCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountLink"
+  /fee_markups:
+    get:
+      operationId: listFeeMarkups
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeMarkupList"
+    post:
+      operationId: createFeeMarkup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeMarkupCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeMarkup"
+  /fee_markups/{id}:
+    delete:
+      operationId: deleteFeeMarkup
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /topups:
+    post:
+      operationId: createTopup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopupCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topup"
+  /disputes:
+    get:
+      operationId: listDisputes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeList"
+  /disputes/{id}:
+    get:
+      operationId: retrieveDispute
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /disputes/{id}/submit_evidence:
+    post:
+      operationId: submitEvidenceDispute
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /disputes/{id}/update_evidence:
+    post:
+      operationId: updateEvidenceDispute
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisputeEvidenceUpdate"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dispute"
+  /dispute_alerts:
+    get:
+      operationId: listDisputeAlerts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeAlertList"
+  /dispute_alerts/{id}:
+    get:
+      operationId: retrieveDisputeAlert
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisputeAlert"
+  /ledger_accounts/{id}:
+    get:
+      operationId: retrieveLedgerAccount
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerAccount"
+  /payout_accounts/{id}:
+    get:
+      operationId: retrievePayoutAccount
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutAccount"
+  /payout_methods:
+    get:
+      operationId: listPayoutMethods
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutMethodList"
+  /payout_methods/{id}:
+    get:
+      operationId: retrievePayoutMethod
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayoutMethod"
+  /transfers:
+    get:
+      operationId: listTransfers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferList"
+    post:
+      operationId: createTransfer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Transfer"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transfer"
+  /transfers/{id}:
+    get:
+      operationId: retrieveTransfer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transfer"
+  /withdrawals:
+    get:
+      operationId: listWithdrawals
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalList"
+    post:
+      operationId: createWithdrawal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Withdrawal"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+  /withdrawals/{id}:
+    get:
+      operationId: retrieveWithdrawal
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+components:
+  schemas:
+    Company:
+      x-resource-prefix: "biz_"
+      type: object
+      required:
+        - title
+      properties:
+        id:
+          type: string
+        affiliate_instructions:
+          type: string
+        created_at:
+          type: string
+        description:
+          type: string
+        featured_affiliate_product:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        logo:
+          type: object
+          properties:
+            url:
+              type: string
+        member_count:
+          type: integer
+        metadata:
+          type: object
+        owner_user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+        published_reviews_count:
+          type: integer
+        route:
+          type: string
+        send_customer_emails:
+          type: boolean
+        social_links:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              url:
+                type: string
+              website:
+                type: string
+        target_audience:
+          type: string
+        title:
+          type: string
+        updated_at:
+          type: string
+        verified:
+          type: boolean
+    CompanyList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Company"
+        page_info:
+          type: object
+    Member:
+      x-resource-prefix: "mb_"
+      type: object
+      properties:
+        id:
+          type: string
+        access_level:
+          type: string
+          enum: ["no_access", "admin", "customer"]
+        company:
+          $ref: "#/components/schemas/Company"
+        company_id:
+          type: string
+        company_token_balance:
+          type: number
+        created_at:
+          type: string
+        joined_at:
+          type: string
+        most_recent_action:
+          type: string
+          enum: ["canceling", "churned", "finished_split_pay", "paused", "paid_subscriber", "paid_once", "expiring", "joined", "drafted", "left", "trialing", "pending_entry", "renewing", "past_due"]
+        most_recent_action_at:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: ["drafted", "joined", "left"]
+        updated_at:
+          type: string
+        usd_total_spent:
+          type: number
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+    MemberList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        page_info:
+          type: object
+    Membership:
+      x-resource-prefix: "mem_"
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: ["active", "paused", "canceled"]
+        created_at:
+          type: string
+        company_id:
+          type: string
+        company:
+          $ref: "#/components/schemas/Company"
+        metadata:
+          type: object
+    MembershipList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Membership"
+        page_info:
+          type: object
+    Payment:
+      x-resource-prefix: "pay_"
+      type: object
+      required:
+        - company_id
+        - member_id
+      properties:
+        company_id:
+          type: string
+        id:
+          type: string
+        member_id:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: number
+        payment_method_id:
+          type: string
+        payment_method:
+          $ref: "#/components/schemas/PaymentMethod"
+        plan_id:
+          type: string
+        plan:
+          $ref: "#/components/schemas/Plan"
+        product_id:
+          type: string
+        product:
+          $ref: "#/components/schemas/Product"
+        metadata:
+          type: object
+        status:
+          type: string
+          enum: ["open", "paid", "void"]
+        substatus:
+          type: string
+          enum: ["pending", "succeeded", "failed", "partially_refunded", "refunded"]
+        refunded_at:
+          type: string
+    PaymentList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+        page_info:
+          type: object
+    PaymentFee:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    PaymentFeeList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentFee"
+        page_info:
+          type: object
+    Event:
+      x-resource-prefix: "evt_"
+      type: object
+      properties:
+        id:
+          type: string
+        api_version:
+          type: string
+        type:
+          type: string
+        timestamp:
+          type: string
+        created_at:
+          type: string
+        company_id:
+          type: string
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+    Webhook:
+      x-resource-prefix: "whk_"
+      type: object
+      properties:
+        id:
+          type: string
+        api_version:
+          type: string
+          enum: ["v1"]
+        child_resource_events:
+          type: boolean
+        created_at:
+          type: string
+        enabled:
+          type: boolean
+        events:
+          type: array
+          items:
+            type: string
+        resource_id:
+          type: string
+        testable_events:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+    WebhookCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        api_version:
+          type: string
+          enum: ["v1"]
+        child_resource_events:
+          type: boolean
+        created_at:
+          type: string
+        enabled:
+          type: boolean
+        events:
+          type: array
+          items:
+            type: string
+        resource_id:
+          type: string
+        testable_events:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+        webhook_secret:
+          type: string
+    WebhookListResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        api_version:
+          type: string
+          enum: ["v1"]
+        child_resource_events:
+          type: boolean
+        created_at:
+          type: string
+        enabled:
+          type: boolean
+        events:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+    WebhookList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookListResponse"
+        page_info:
+          type: object
+    PaymentMethod:
+      x-resource-prefix: "pmt_method_"
+      type: object
+      properties:
+        id:
+          type: string
+        brand:
+          type: string
+        country:
+          type: string
+        exp_month:
+          type: integer
+        exp_year:
+          type: integer
+        last4:
+          type: string
+        payment_token:
+          type: string
+        payment_token_id:
+          type: string
+        token:
+          type: string
+    PaymentMethodList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PaymentMethod"
+        page_info:
+          type: object
+    AccountLinkCreate:
+      type: object
+      required:
+        - company_id
+        - refresh_url
+        - return_url
+        - use_case
+      properties:
+        company_id:
+          type: string
+        refresh_url:
+          type: string
+        return_url:
+          type: string
+        use_case:
+          type: string
+          enum: ["account_onboarding", "payouts_portal"]
+    AccountLink:
+      x-resource-prefix: "act_link_"
+      type: object
+      required:
+        - expires_at
+        - url
+      properties:
+        id:
+          type: string
+        expires_at:
+          type: string
+        url:
+          type: string
+    FeeMarkupCreate:
+      type: object
+      required:
+        - company_id
+        - fee_type
+      properties:
+        company_id:
+          type: string
+        fee_type:
+          type: string
+          enum: ["crypto_withdrawal_markup", "rtp_withdrawal_markup", "next_day_bank_withdrawal_markup", "bank_wire_withdrawal_markup", "digital_wallet_withdrawal_markup"]
+        fixed_fee_usd:
+          type: number
+        metadata:
+          type: object
+        notes:
+          type: string
+        percentage_fee:
+          type: number
+    FeeMarkup:
+      x-resource-prefix: "feemarkup_"
+      type: object
+      required:
+        - id
+        - created_at
+        - fee_type
+        - updated_at
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        created_at:
+          type: string
+        fee_type:
+          type: string
+          enum: ["crypto_withdrawal_markup", "rtp_withdrawal_markup", "next_day_bank_withdrawal_markup", "bank_wire_withdrawal_markup", "digital_wallet_withdrawal_markup"]
+        fixed_fee_usd:
+          type: number
+        metadata:
+          type: object
+        notes:
+          type: string
+        percentage_fee:
+          type: number
+        updated_at:
+          type: string
+    FeeMarkupList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeMarkup"
+        page_info:
+          type: object
+    TopupCreate:
+      type: object
+      required:
+        - amount
+        - company_id
+        - currency
+        - payment_method_id
+      properties:
+        amount:
+          type: number
+        company_id:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        payment_method_id:
+          type: string
+    Topup:
+      x-resource-prefix: "topup_"
+      type: object
+      required:
+        - id
+        - created_at
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        failure_message:
+          type: string
+        paid_at:
+          type: string
+        status:
+          type: string
+        total:
+          type: number
+    DisputeEvidenceUpdate:
+      type: object
+      properties:
+        access_activity_log:
+          type: string
+        billing_address:
+          type: string
+        cancellation_policy_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        cancellation_policy_disclosure:
+          type: string
+        customer_communication_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        customer_email_address:
+          type: string
+        customer_name:
+          type: string
+        notes:
+          type: string
+        product_description:
+          type: string
+        refund_policy_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        refund_policy_disclosure:
+          type: string
+        refund_refusal_explanation:
+          type: string
+        service_date:
+          type: string
+        uncategorized_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+    Dispute:
+      x-resource-prefix: "disp_"
+      type: object
+      required:
+        - id
+        - amount
+        - currency
+        - status
+        - visa_rdr
+      properties:
+        id:
+          type: string
+        access_activity_log:
+          type: string
+        amount:
+          type: number
+        billing_address:
+          type: string
+        cancellation_policy_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        cancellation_policy_disclosure:
+          type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        customer_communication_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        customer_email_address:
+          type: string
+        customer_name:
+          type: string
+        editable:
+          type: boolean
+        needs_response_by:
+          type: string
+        notes:
+          type: string
+        payment:
+          type: object
+          properties:
+            id:
+              type: string
+        plan:
+          type: object
+          properties:
+            id:
+              type: string
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        product_description:
+          type: string
+        reason:
+          type: string
+        refund_policy_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        refund_policy_disclosure:
+          type: string
+        refund_refusal_explanation:
+          type: string
+        service_date:
+          type: string
+        status:
+          type: string
+          enum: ["warning_needs_response", "warning_under_review", "warning_closed", "needs_response", "under_review", "won", "lost", "closed", "other"]
+        uncategorized_attachment:
+          type: object
+          properties:
+            id:
+              type: string
+        visa_rdr:
+          type: boolean
+    DisputeList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dispute"
+        page_info:
+          type: object
+    DisputeAlert:
+      x-resource-prefix: "dalert_"
+      type: object
+      required:
+        - id
+        - alert_type
+        - amount
+        - charge_for_alert
+        - created_at
+        - currency
+      properties:
+        id:
+          type: string
+        alert_type:
+          type: string
+          enum: ["dispute", "dispute_rdr", "fraud"]
+        amount:
+          type: number
+        charge_for_alert:
+          type: boolean
+        created_at:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        dispute:
+          type: object
+          properties:
+            id:
+              type: string
+            amount:
+              type: number
+            created_at:
+              type: string
+            currency:
+              type: string
+              enum: ["usd", "eur", "gbp", "cad"]
+            reason:
+              type: string
+            status:
+              type: string
+              enum: ["warning_needs_response", "warning_under_review", "warning_closed", "needs_response", "under_review", "won", "lost", "closed", "other"]
+        payment:
+          type: object
+          properties:
+            id:
+              type: string
+            billing_reason:
+              type: string
+            card_brand:
+              type: string
+            card_last4:
+              type: string
+            created_at:
+              type: string
+            currency:
+              type: string
+              enum: ["usd", "eur", "gbp", "cad"]
+            dispute_alerted_at:
+              type: string
+            member:
+              type: object
+              properties:
+                id:
+                  type: string
+                phone:
+                  type: string
+            membership:
+              type: object
+              properties:
+                id:
+                  type: string
+                status:
+                  type: string
+            paid_at:
+              type: string
+            payment_method_type:
+              type: string
+            subtotal:
+              type: number
+            total:
+              type: number
+            usd_total:
+              type: number
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                username:
+                  type: string
+        transaction_date:
+          type: string
+    DisputeAlertList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/DisputeAlert"
+        page_info:
+          type: object
+    LedgerAccount:
+      x-resource-prefix: "ledger_"
+      type: object
+      required:
+        - id
+        - balances
+        - ledger_type
+        - owner
+      properties:
+        id:
+          type: string
+        balances:
+          type: array
+          items:
+            type: object
+            properties:
+              balance:
+                type: number
+              currency:
+                type: string
+                enum: ["usd", "eur", "gbp", "cad"]
+              pending_balance:
+                type: number
+              reserve_balance:
+                type: number
+        ledger_type:
+          type: string
+          enum: ["primary", "pool"]
+        owner:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            route:
+              type: string
+            title:
+              type: string
+            typename:
+              type: string
+            username:
+              type: string
+        payments_approval_status:
+          type: string
+          enum: ["pending", "approved", "monitoring", "rejected"]
+        payout_account_details:
+          type: object
+          properties:
+            id:
+              type: string
+            address:
+              type: object
+              properties:
+                city:
+                  type: string
+                country:
+                  type: string
+                line1:
+                  type: string
+                line2:
+                  type: string
+                postal_code:
+                  type: string
+                state:
+                  type: string
+            business_name:
+              type: string
+            business_representative:
+              type: object
+              properties:
+                date_of_birth:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                middle_name:
+                  type: string
+            email:
+              type: string
+            latest_verification:
+              type: object
+              properties:
+                id:
+                  type: string
+                last_error_code:
+                  type: string
+                last_error_reason:
+                  type: string
+                status:
+                  type: string
+            phone:
+              type: string
+            status:
+              type: string
+        transfer_fee:
+          type: number
+    PayoutAccount:
+      x-resource-prefix: "poacct_"
+      type: object
+      properties:
+        id:
+          type: string
+        address:
+          type: object
+          properties:
+            city:
+              type: string
+            country:
+              type: string
+            line1:
+              type: string
+            line2:
+              type: string
+            postal_code:
+              type: string
+            state:
+              type: string
+        business_name:
+          type: string
+        business_representative:
+          type: object
+          properties:
+            date_of_birth:
+              type: string
+            first_name:
+              type: string
+            last_name:
+              type: string
+            middle_name:
+              type: string
+        email:
+          type: string
+        latest_verification:
+          type: object
+          properties:
+            id:
+              type: string
+            last_error_code:
+              type: string
+            last_error_reason:
+              type: string
+            status:
+              type: string
+        phone:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "verified", "rejected"]
+    PayoutMethod:
+      x-resource-prefix: "pomethod_"
+      type: object
+      properties:
+        id:
+          type: string
+        account_reference:
+          type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+        destination:
+          type: object
+          properties:
+            category:
+              type: string
+            country_code:
+              type: string
+            name:
+              type: string
+        institution_name:
+          type: string
+        is_default:
+          type: boolean
+        nickname:
+          type: string
+    PayoutMethodList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PayoutMethod"
+        page_info:
+          type: object
+    Refund:
+      x-resource-prefix: "ref_"
+      type: object
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        created_at:
+          type: string
+        currency:
+          type: string
+        payment:
+          type: object
+          properties:
+            id:
+              type: string
+        provider:
+          type: string
+        provider_created_at:
+          type: string
+        reference_status:
+          type: string
+        reference_type:
+          type: string
+        reference_value:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "succeeded", "failed"]
+    RefundList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Refund"
+        page_info:
+          type: object
+    SetupIntent:
+      x-resource-prefix: "setup_"
+      type: object
+      properties:
+        id:
+          type: string
+        checkout_configuration:
+          type: object
+          properties:
+            id:
+              type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+        company_id:
+          type: string
+        created_at:
+          type: string
+        error_message:
+          type: string
+        member:
+          type: object
+          properties:
+            id:
+              type: string
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                name:
+                  type: string
+                username:
+                  type: string
+        metadata:
+          type: object
+        payment_method:
+          type: object
+          properties:
+            id:
+              type: string
+            card:
+              type: object
+              properties:
+                brand:
+                  type: string
+                exp_month:
+                  type: integer
+                exp_year:
+                  type: integer
+                last4:
+                  type: string
+            created_at:
+              type: string
+            mailing_address:
+              type: object
+            payment_method_type:
+              type: string
+        status:
+          type: string
+          enum: ["requires_action", "succeeded", "canceled", "failed"]
+    SetupIntentList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetupIntent"
+        page_info:
+          type: object
+    Transfer:
+      x-resource-prefix: "tr_"
+      type: object
+      required:
+        - amount
+        - currency
+        - destination_id
+        - origin_id
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        created_at:
+          type: string
+        currency:
+          type: string
+        destination:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            route:
+              type: string
+            title:
+              type: string
+            typename:
+              type: string
+            username:
+              type: string
+        destination_id:
+          type: string
+        destination_ledger_account_id:
+          type: string
+        fee_amount:
+          type: number
+        metadata:
+          type: object
+        notes:
+          type: string
+        origin:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            route:
+              type: string
+            title:
+              type: string
+            typename:
+              type: string
+            username:
+              type: string
+        origin_id:
+          type: string
+        origin_ledger_account_id:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "paid", "failed"]
+        updated_at:
+          type: string
+    TransferList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transfer"
+        page_info:
+          type: object
+    Withdrawal:
+      x-resource-prefix: "wd_"
+      type: object
+      required:
+        - amount
+        - company_id
+        - currency
+      properties:
+        id:
+          type: string
+        amount:
+          type: number
+        company_id:
+          type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+        error_code:
+          type: string
+        error_message:
+          type: string
+        estimated_availability:
+          type: string
+        fee_amount:
+          type: number
+        fee_type:
+          type: string
+        ledger_account:
+          type: object
+          properties:
+            id:
+              type: string
+            company_id:
+              type: string
+        markup_fee:
+          type: number
+        payout_token:
+          type: object
+          properties:
+            id:
+              type: string
+            created_at:
+              type: string
+            destination_currency_code:
+              type: string
+            nickname:
+              type: string
+            payer_name:
+              type: string
+        payout_method_id:
+          type: string
+        platform_covers_fees:
+          type: boolean
+        speed:
+          type: string
+        statement_descriptor:
+          type: string
+        status:
+          type: string
+          enum: ["pending", "paid", "failed"]
+        trace_code:
+          type: string
+    WithdrawalList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Withdrawal"
+        page_info:
+          type: object
+    Invoice:
+      x-resource-prefix: "inv_"
+      type: object
+      required:
+        - company_id
+      properties:
+        collection_method:
+          type: string
+          enum: ["charge_automatically", "send_invoice"]
+        id:
+          type: string
+        company_id:
+          type: string
+        created_at:
+          type: string
+        current_plan:
+          type: object
+          properties:
+            id:
+              type: string
+            currency:
+              type: string
+            formatted_price:
+              type: string
+        due_date:
+          type: string
+        email_address:
+          type: string
+        customer_name:
+          type: string
+        fetch_invoice_token:
+          type: string
+        member_id:
+          type: string
+        number:
+          type: string
+        payment_token_id:
+          type: string
+        product:
+          $ref: "#/components/schemas/Product"
+        product_id:
+          type: string
+        plan:
+          $ref: "#/components/schemas/Plan"
+        save_as_draft:
+          type: boolean
+        status:
+          type: string
+          enum: ["draft", "open", "paid", "uncollectible", "void", "refunded"]
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+    InvoiceList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invoice"
+        page_info:
+          type: object
+    Plan:
+      x-resource-prefix: "plan_"
+      type: object
+      required:
+        - company_id
+        - product_id
+        - title
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        billing_period:
+          type: integer
+        collect_tax:
+          type: boolean
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+        custom_fields:
+          type: array
+          items:
+            type: object
+        description:
+          type: string
+        expiration_days:
+          type: integer
+        initial_price:
+          type: number
+        internal_notes:
+          type: string
+        invoice:
+          type: object
+          properties:
+            id:
+              type: string
+        member_count:
+          type: integer
+        payment_method_configuration:
+          type: object
+          properties:
+            disabled:
+              type: array
+              items:
+                type: string
+            enabled:
+              type: array
+              items:
+                type: string
+            include_platform_defaults:
+              type: boolean
+        plan_type:
+          type: string
+          enum: ["renewal", "one_time"]
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        product_id:
+          type: string
+        purchase_url:
+          type: string
+        release_method:
+          type: string
+          enum: ["buy_now", "waitlist"]
+        renewal_price:
+          type: number
+        split_pay_required_payments:
+          type: integer
+        stock:
+          type: integer
+        tax_type:
+          type: string
+        title:
+          type: string
+        trial_period_days:
+          type: integer
+        unlimited_stock:
+          type: boolean
+        updated_at:
+          type: string
+        visibility:
+          type: string
+          enum: ["visible", "hidden", "archived", "quick_link"]
+    PlanList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Plan"
+        page_info:
+          type: object
+    CheckoutConfigurationCreate:
+      type: object
+      required:
+        - company_id
+      properties:
+        affiliate_code:
+          type: string
+        allow_promo_codes:
+          type: boolean
+        company_id:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        metadata:
+          type: object
+        mode:
+          type: string
+          enum: ["payment", "setup"]
+        payment_method_configuration:
+          type: object
+          properties:
+            disabled:
+              type: array
+              items:
+                type: string
+            enabled:
+              type: array
+              items:
+                type: string
+            include_platform_defaults:
+              type: boolean
+        plan:
+          type: object
+          properties:
+            billing_period:
+              type: integer
+            company_id:
+              type: string
+            currency:
+              type: string
+              enum: ["usd", "eur", "gbp", "cad"]
+            initial_price:
+              type: number
+            plan_type:
+              type: string
+              enum: ["renewal", "one_time"]
+            product:
+              type: object
+              properties:
+                external_identifier:
+                  type: string
+                title:
+                  type: string
+            product_id:
+              type: string
+            release_method:
+              type: string
+              enum: ["buy_now", "waitlist"]
+            renewal_price:
+              type: number
+            title:
+              type: string
+            trial_period_days:
+              type: integer
+            visibility:
+              type: string
+              enum: ["visible", "hidden", "archived", "quick_link"]
+        plan_id:
+          type: string
+        redirect_url:
+          type: string
+        source_url:
+          type: string
+    CheckoutConfiguration:
+      x-resource-prefix: "chkcfg_"
+      type: object
+      required:
+        - id
+        - allow_promo_codes
+        - company_id
+        - mode
+        - purchase_url
+      properties:
+        id:
+          type: string
+        affiliate_code:
+          type: string
+        allow_promo_codes:
+          type: boolean
+        company_id:
+          type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        metadata:
+          type: object
+        mode:
+          type: string
+          enum: ["payment", "setup"]
+        payment_method_configuration:
+          type: object
+          properties:
+            disabled:
+              type: array
+              items:
+                type: string
+            enabled:
+              type: array
+              items:
+                type: string
+            include_platform_defaults:
+              type: boolean
+        plan:
+          $ref: "#/components/schemas/Plan"
+        plan_id:
+          type: string
+        purchase_url:
+          type: string
+        redirect_url:
+          type: string
+    CheckoutConfigurationList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckoutConfiguration"
+        page_info:
+          type: object
+    PromoCodeCreate:
+      type: object
+      required:
+        - amount_off
+        - base_currency
+        - code
+        - company_id
+        - new_users_only
+        - promo_duration_months
+        - promo_type
+      properties:
+        amount_off:
+          type: number
+        base_currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        code:
+          type: string
+        company_id:
+          type: string
+        churned_users_only:
+          type: boolean
+        existing_memberships_only:
+          type: boolean
+        expires_at:
+          type: string
+        new_users_only:
+          type: boolean
+        one_per_customer:
+          type: boolean
+        plan_ids:
+          type: array
+          items:
+            type: string
+        product_id:
+          type: string
+        promo_duration_months:
+          type: integer
+        promo_type:
+          type: string
+          enum: ["percentage", "flat_amount"]
+        stock:
+          type: integer
+        unlimited_stock:
+          type: boolean
+    PromoCode:
+      x-resource-prefix: "promo_"
+      type: object
+      required:
+        - id
+        - amount_off
+        - churned_users_only
+        - company
+        - created_at
+        - currency
+        - existing_memberships_only
+        - new_users_only
+        - one_per_customer
+        - promo_type
+        - status
+        - stock
+        - unlimited_stock
+        - uses
+      properties:
+        id:
+          type: string
+        amount_off:
+          type: number
+        churned_users_only:
+          type: boolean
+        code:
+          type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        created_at:
+          type: string
+        currency:
+          type: string
+          enum: ["usd", "eur", "gbp", "cad"]
+        duration:
+          type: string
+          enum: ["forever", "once", "repeating"]
+        existing_memberships_only:
+          type: boolean
+        expires_at:
+          type: string
+        new_users_only:
+          type: boolean
+        one_per_customer:
+          type: boolean
+        product:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        promo_duration_months:
+          type: integer
+        promo_type:
+          type: string
+          enum: ["percentage", "flat_amount"]
+        status:
+          type: string
+          enum: ["active", "inactive", "archived"]
+        stock:
+          type: integer
+        unlimited_stock:
+          type: boolean
+        uses:
+          type: integer
+    PromoCodeList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromoCode"
+        page_info:
+          type: object
+    Product:
+      x-resource-prefix: "prod_"
+      type: object
+      required:
+        - company_id
+        - title
+      properties:
+        id:
+          type: string
+        company_id:
+          type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+            route:
+              type: string
+            title:
+              type: string
+        created_at:
+          type: string
+        custom_cta:
+          type: string
+        custom_cta_url:
+          type: string
+        custom_statement_descriptor:
+          type: string
+        description:
+          type: string
+        external_identifier:
+          type: string
+        gallery_images:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              url:
+                type: string
+        global_affiliate_percentage:
+          type: number
+        global_affiliate_status:
+          type: string
+        headline:
+          type: string
+        member_affiliate_percentage:
+          type: number
+        member_affiliate_status:
+          type: string
+        member_count:
+          type: integer
+        owner_user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            username:
+              type: string
+        product_tax_code:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            product_type:
+              type: string
+        published_reviews_count:
+          type: integer
+        route:
+          type: string
+        title:
+          type: string
+        updated_at:
+          type: string
+        verified:
+          type: boolean
+        visibility:
+          type: string
+          enum: ["visible", "hidden", "archived", "quick_link"]
+    ProductList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        page_info:
+          type: object

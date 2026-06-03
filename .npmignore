@@ -1,0 +1,16 @@
+# Source (dist/ is published)
+src/
+
+# Tests
+tests/
+
+# Vendor fixtures
+vendor/
+
+# Config
+tsconfig.json
+.gitignore
+
+# Dev files
+*.log
+.DS_Store

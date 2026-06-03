@@ -1,0 +1,49 @@
+{
+  "name": "whopsdk-mock",
+  "version": "0.0.1",
+  "description": "Stateful in-process mock for the Whop TypeScript SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && tsx tests/payout-test.ts && tsx tests/dispute-test.ts",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "whop",
+    "sdk",
+    "mock",
+    "testing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "@whop/sdk": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@whop/sdk": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist",
+    "vendor"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  }
+}
