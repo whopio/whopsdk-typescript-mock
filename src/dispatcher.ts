@@ -9,6 +9,7 @@ import { ResponseBuilder } from './response-builder.js';
 import { ErrorInjector, NotFoundError, WhopMockError } from './error-injector.js';
 import { PayoutGraph } from './dispatcher/payout-graph.js';
 import { DisputeGraph } from './dispatcher/dispute-graph.js';
+import { PaymentsGraph } from './dispatcher/payments-graph.js';
 import { RouteRegistry } from './route-registry.js';
 
 const PAGINATION_QUERY_KEYS = ['after', 'before', 'first', 'last', 'limit'];
@@ -30,6 +31,7 @@ export class Dispatcher {
   private errorInjector: ErrorInjector;
   private payoutGraph: PayoutGraph;
   private disputeGraph: DisputeGraph;
+  private paymentsGraph: PaymentsGraph;
 
   constructor(options: {
     store: Store;
@@ -48,6 +50,7 @@ export class Dispatcher {
     this.paginator = new Paginator();
     this.payoutGraph = new PayoutGraph(this.store, this.exampleGenerator);
     this.disputeGraph = new DisputeGraph(this.store, this.exampleGenerator);
+    this.paymentsGraph = new PaymentsGraph(this.store, this.exampleGenerator);
   }
 
   dispatch(options: {
@@ -204,6 +207,13 @@ export class Dispatcher {
       throw new NotFoundError(`${route.resourceName} not found`);
     }
 
+    // Read-only fee breakdown for a payment.
+    if (route.resourceName === ResourceNames.PAYMENT && route.action === 'fees') {
+      const fees = this.paymentsGraph.feesForPayment(current);
+      const paginated = this.paginator.paginate(fees, { limit: this.listLimit({}) });
+      return [200, paginated];
+    }
+
     const attributes = this.stringifyKeys(body as Record<string, unknown> ?? {});
 
     // Apply status transitions based on action
@@ -295,9 +305,37 @@ export class Dispatcher {
       case ResourceNames.RESOLUTION_CASE:
         return this.disputeGraph.ensureResolutionCaseGraph(record, payload);
 
-      case ResourceNames.COMPANY:
       case ResourceNames.PRODUCT:
+        return this.paymentsGraph.ensureProductGraph(record, payload);
+
       case ResourceNames.PLAN:
+        return this.paymentsGraph.ensurePlanGraph(record, payload);
+
+      case ResourceNames.CHECKOUT_CONFIGURATION:
+        return this.paymentsGraph.ensureCheckoutConfigurationGraph(record, payload);
+
+      case ResourceNames.PAYMENT:
+        return this.paymentsGraph.ensurePaymentGraph(record, payload);
+
+      case ResourceNames.MEMBERSHIP:
+        return this.paymentsGraph.ensureMembershipGraph(record, payload);
+
+      case ResourceNames.INVOICE:
+        return this.paymentsGraph.ensureInvoiceGraph(record, payload);
+
+      case ResourceNames.REFUND:
+        return this.paymentsGraph.ensureRefundGraph(record, payload);
+
+      case ResourceNames.PROMO_CODE:
+        return this.paymentsGraph.ensurePromoCodeGraph(record, payload);
+
+      case ResourceNames.PAYMENT_METHOD:
+        return this.paymentsGraph.ensurePaymentMethodGraph(record, payload);
+
+      case ResourceNames.SETUP_INTENT:
+        return this.paymentsGraph.ensureSetupIntentGraph(record, payload);
+
+      case ResourceNames.COMPANY:
         // Ensure related resources exist
         this.ensureCompanyExists(record.company_id as string);
         return this.store.find(resourceName, record.id as string) ?? record;
@@ -318,13 +356,43 @@ export class Dispatcher {
   }
 
   private applyActionSideEffects(
-    _resourceName: string,
-    _action: string,
+    resourceName: string,
+    action: string,
     _previous: ResourceRecord,
     updated: ResourceRecord,
-    _attributes: Record<string, unknown>
+    attributes: Record<string, unknown>
   ): ResourceRecord {
-    // Placeholder for resource-specific action side effects
+    if (resourceName === ResourceNames.PAYMENT && action === 'refund') {
+      const requested = attributes.amount as number | undefined;
+      const paymentAmount = (updated.amount as number) ?? 0;
+      const refundAmount = requested ?? paymentAmount;
+      this.paymentsGraph.createRefundForPayment(updated, refundAmount);
+
+      const partial = refundAmount < paymentAmount;
+      const refundUpdates = {
+        substatus: partial ? 'partially_refunded' : 'refunded',
+        refunded_at: new Date().toISOString(),
+      };
+      return this.store.update(resourceName, updated.id as string, refundUpdates) ?? updated;
+    }
+
+    if (resourceName === ResourceNames.INVOICE && action === 'mark_paid') {
+      const currentPlan = updated.current_plan as ResourceRecord | undefined;
+      const payment = this.exampleGenerator.generate(ResourceNames.PAYMENT, {
+        company_id: updated.company_id,
+        member_id: updated.member_id,
+        plan_id: updated.plan_id,
+        product_id: updated.product_id,
+        currency: currentPlan?.currency ?? 'usd',
+        status: 'paid',
+      });
+      const storedPayment = this.store.insert(ResourceNames.PAYMENT, payment);
+      this.paymentsGraph.ensurePaymentGraph(storedPayment, {
+        company_id: updated.company_id as string,
+      });
+      return updated;
+    }
+
     return updated;
   }
 
@@ -343,6 +411,21 @@ export class Dispatcher {
       [ResourceNames.TRANSFER]: {
         complete: { status: 'paid' },
         cancel: { status: 'canceled' },
+      },
+      [ResourceNames.PAYMENT]: {
+        retry: { status: 'paid', substatus: 'succeeded' },
+        void: { status: 'void', substatus: 'failed' },
+      },
+      [ResourceNames.MEMBERSHIP]: {
+        cancel: { status: 'canceled' },
+        pause: { status: 'paused' },
+        resume: { status: 'active' },
+        uncancel: { status: 'active' },
+      },
+      [ResourceNames.INVOICE]: {
+        mark_paid: { status: 'paid' },
+        mark_uncollectible: { status: 'uncollectible' },
+        void: { status: 'void' },
       },
     };
 

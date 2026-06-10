@@ -29,11 +29,10 @@ export class TestHelper {
 
   createPlan(attributes: Record<string, unknown> = {}): ResourceRecord {
     const company = this.ensureCompany(attributes.company, attributes.company_id as string);
-    const product = this.ensureProduct(
-      attributes.product,
-      company?.id as string,
-      attributes.product_id as string
-    );
+    // A plan always belongs to a product — create one if the caller didn't provide it.
+    const product =
+      this.ensureProduct(attributes.product, company?.id as string, attributes.product_id as string) ??
+      this.createProduct({ company_id: company?.id });
 
     const { company: _company, product: _product, ...rest } = attributes;
     const attrs = {
@@ -259,11 +258,15 @@ export class TestHelper {
   createPayment(attributes: Record<string, unknown> = {}): ResourceRecord {
     const company = this.ensureCompany(attributes.company, attributes.company_id as string);
     const { company: _company, ...rest } = attributes;
+    const status = (attributes.status ?? 'paid') as string;
+    const amount = (attributes.amount ?? attributes.total ?? 10.0) as number;
     const attrs = {
       ...rest,
       company_id: attributes.company_id ?? company?.id,
-      status: attributes.status ?? 'paid',
-      total: attributes.total ?? 10.0,
+      status,
+      substatus: attributes.substatus ?? (status === 'paid' ? 'succeeded' : 'pending'),
+      total: attributes.total ?? amount,
+      amount,
       currency: attributes.currency ?? 'usd',
     };
     return this.seed(ResourceNames.PAYMENT, attrs);
@@ -323,6 +326,188 @@ export class TestHelper {
     });
 
     return { resolution_case: resolutionCase, payment, user, company };
+  }
+
+  // ========== Payins / Checkout ==========
+
+  createMember(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    const attrs = {
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+      status: attributes.status ?? 'joined',
+    };
+    return this.seed(ResourceNames.MEMBER, attrs);
+  }
+
+  createPaymentMethod(attributes: Record<string, unknown> = {}): ResourceRecord {
+    return this.createViaRequest('/payment_methods', {
+      brand: attributes.brand ?? 'visa',
+      last4: attributes.last4 ?? '4242',
+      ...attributes,
+    });
+  }
+
+  createMembership(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    return this.createViaRequest('/memberships', {
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+      status: attributes.status ?? 'active',
+    });
+  }
+
+  createCheckoutConfiguration(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    return this.createViaRequest('/checkout_configurations', {
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+      mode: attributes.mode ?? 'payment',
+      allow_promo_codes: attributes.allow_promo_codes ?? true,
+    });
+  }
+
+  createInvoice(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    return this.createViaRequest('/invoices', {
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+      status: attributes.status ?? 'open',
+    });
+  }
+
+  createPromoCode(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    return this.createViaRequest('/promo_codes', {
+      amount_off: attributes.amount_off ?? 10,
+      base_currency: attributes.base_currency ?? 'usd',
+      code: attributes.code ?? 'PROMO2024',
+      new_users_only: attributes.new_users_only ?? false,
+      promo_duration_months: attributes.promo_duration_months ?? 1,
+      promo_type: attributes.promo_type ?? 'percentage',
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+    });
+  }
+
+  /**
+   * Refunds are normally created through payments.refund. This seeds a standalone
+   * refund linked to a payment for tests that read the refunds collection directly.
+   */
+  createRefund(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const paymentId =
+      (attributes.payment_id as string | undefined) ??
+      ((attributes.payment as Record<string, unknown> | undefined)?.id as string | undefined);
+    const { payment_id: _paymentId, payment: _payment, ...rest } = attributes;
+    return this.seed(ResourceNames.REFUND, {
+      ...rest,
+      status: attributes.status ?? 'succeeded',
+      currency: attributes.currency ?? 'usd',
+      payment: paymentId ? { id: paymentId } : undefined,
+    });
+  }
+
+  /**
+   * SetupIntents are normally created through checkout setup mode. This seeds one
+   * for tests that read the setup_intents collection directly.
+   */
+  createSetupIntent(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const { company: _company, ...rest } = attributes;
+    return this.seed(ResourceNames.SETUP_INTENT, {
+      ...rest,
+      company_id: attributes.company_id ?? company?.id,
+      status: attributes.status ?? 'requires_action',
+    });
+  }
+
+  /**
+   * Create a checkout-ready stack: Company -> Product -> Plan -> CheckoutConfiguration.
+   * Mirrors what a creator sets up before a customer can buy.
+   */
+  createCheckoutStack(attributes: Record<string, unknown> = {}): {
+    company: ResourceRecord;
+    product: ResourceRecord;
+    plan: ResourceRecord;
+    checkout_configuration: ResourceRecord;
+  } {
+    const company = this.createCompany((attributes.company ?? {}) as Record<string, unknown>);
+
+    const product = this.createProduct({
+      company_id: company.id,
+      ...((attributes.product ?? {}) as Record<string, unknown>),
+    });
+
+    const plan = this.createPlan({
+      company_id: company.id,
+      product_id: product.id,
+      ...((attributes.plan ?? {}) as Record<string, unknown>),
+    });
+
+    const checkoutConfiguration = this.createCheckoutConfiguration({
+      company_id: company.id,
+      plan_id: plan.id,
+      ...((attributes.checkout_configuration ?? {}) as Record<string, unknown>),
+    });
+
+    return { company, product, plan, checkout_configuration: checkoutConfiguration };
+  }
+
+  /**
+   * Create a full customer purchase stack: the checkout stack plus a payment method,
+   * member, membership and a paid payment linked across the graph.
+   * Use this for testing the complete payins lifecycle.
+   */
+  createPaymentStack(attributes: Record<string, unknown> = {}): {
+    company: ResourceRecord;
+    product: ResourceRecord;
+    plan: ResourceRecord;
+    checkout_configuration: ResourceRecord;
+    payment_method: ResourceRecord;
+    member: ResourceRecord;
+    membership: ResourceRecord;
+    payment: ResourceRecord;
+  } {
+    const stack = this.createCheckoutStack(attributes);
+
+    const paymentMethod = this.createPaymentMethod(
+      (attributes.payment_method ?? {}) as Record<string, unknown>
+    );
+
+    const member = this.createMember({
+      company_id: stack.company.id,
+      ...((attributes.member ?? {}) as Record<string, unknown>),
+    });
+
+    const membership = this.createMembership({
+      company_id: stack.company.id,
+      ...((attributes.membership ?? {}) as Record<string, unknown>),
+    });
+
+    const payment = this.createViaRequest('/payments', {
+      company_id: stack.company.id,
+      member_id: member.id,
+      plan_id: stack.plan.id,
+      product_id: stack.product.id,
+      payment_method_id: paymentMethod.id,
+      amount: attributes.amount ?? 10.0,
+      currency: attributes.currency ?? 'usd',
+      status: 'paid',
+      ...((attributes.payment ?? {}) as Record<string, unknown>),
+    });
+
+    return {
+      ...stack,
+      payment_method: paymentMethod,
+      member,
+      membership,
+      payment,
+    };
   }
 
   private seed(resourceName: string, overrides: Record<string, unknown> = {}): ResourceRecord {

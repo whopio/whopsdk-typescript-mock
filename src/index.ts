@@ -11,6 +11,7 @@ import type {
 export { WhopMockError, NotFoundError } from './error-injector.js';
 export { ResourceNames } from './types.js';
 export { Store } from './store.js';
+export { TestHelper } from './test-helper.js';
 export type {
   WhopMockConfiguration,
   ResourceRecord,

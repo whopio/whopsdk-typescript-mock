@@ -56,6 +56,19 @@ it('creates a withdrawal', async () => {
 - `payout_accounts` - External payout destinations
 - `payout_methods` - Payout method configurations
 
+**Payins & Checkout**:
+- `products` - Products, linked to a company
+- `plans` - Pricing plans, linked to a product
+- `checkout_configurations` - Checkout configs with an embedded plan + purchase URL
+- `payments` - Payment records (`list`, `retrieve`, `fees`, `refund`, `retry`, `void`) with status/substatus lifecycle
+- `refunds` - Refund records (auto-created when a payment is refunded)
+- `memberships` - Memberships with `cancel` / `uncancel` / `pause` / `resume` / `add_free_days`
+- `invoices` - Invoices with `mark_paid` (creates a payment), `mark_uncollectible`, `void`
+- `promo_codes` - Discount codes
+- `payment_methods` - Stored payment methods
+- `setup_intents` - Setup intents
+- `members` - Members
+
 **Disputes & Resolution**:
 - `disputes` - Payment disputes with status lifecycle
 - `dispute_alerts` - Early dispute alerts (DISPUTE, DISPUTE_RDR, FRAUD)
@@ -63,11 +76,7 @@ it('creates a withdrawal', async () => {
 
 **Core**:
 - `companies` - Company/business accounts
-- `products` - Products
-- `plans` - Pricing plans
-- `payments` - Payment records
 - `users` - User accounts
-- `payment_methods` - Stored payment methods
 
 ## API
 
@@ -113,6 +122,19 @@ const withdrawal = helper.createWithdrawal({
 // Complete payout stack
 const stack = helper.createPayoutStack();
 // Returns: { company, ledger_account, payout_account, payout_method }
+
+// Payins / checkout
+const checkout = helper.createCheckoutStack();
+// Returns: { company, product, plan, checkout_configuration }
+
+const purchase = helper.createPaymentStack({ amount: 49.0, currency: 'usd' });
+// Returns: { company, product, plan, checkout_configuration,
+//            payment_method, member, membership, payment }
+// `payment` is `paid` (substatus `succeeded`) and linked across the graph.
+
+const membership = helper.createMembership({ name: 'Gold' });
+const invoice = helper.createInvoice({ company_id: company.id, plan_id: purchase.plan.id });
+const promo = helper.createPromoCode({ company_id: company.id, code: 'SAVE20' });
 
 // Disputes
 const { dispute, payment, company } = helper.createDisputeWithPayment({

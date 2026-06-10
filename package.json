@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && tsx tests/payout-test.ts && tsx tests/dispute-test.ts",
+    "test": "npm run build && tsx tests/payout-test.ts && tsx tests/dispute-test.ts && tsx tests/payments-test.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.ts",
     "prepublishOnly": "npm run build"
