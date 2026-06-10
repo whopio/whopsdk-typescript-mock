@@ -47,7 +47,7 @@ export class SpecLoader {
         // Handle key: value pairs
         const colonIndex = trimmed.indexOf(':');
         if (colonIndex > 0) {
-          const key = trimmed.slice(0, colonIndex).trim();
+          const key = this.unquote(trimmed.slice(0, colonIndex).trim());
           const value = trimmed.slice(colonIndex + 1).trim();
 
           // Pop stack to find parent
@@ -78,6 +78,13 @@ export class SpecLoader {
   }
 
   private parseValue(value: string): unknown {
+    // Inline flow arrays, e.g. enum: ["a", "b"]
+    if (value.startsWith('[') && value.endsWith(']')) {
+      const inner = value.slice(1, -1).trim();
+      if (!inner) return [];
+      return this.splitFlow(inner).map((item) => this.parseValue(item.trim()));
+    }
+
     // Remove quotes
     if ((value.startsWith('"') && value.endsWith('"')) ||
         (value.startsWith("'") && value.endsWith("'"))) {
@@ -96,6 +103,42 @@ export class SpecLoader {
     if (/^-?\d+\.\d+$/.test(value)) return parseFloat(value);
 
     return value;
+  }
+
+  /** Splits a flow sequence on top-level commas, ignoring commas inside quotes. */
+  private splitFlow(inner: string): string[] {
+    const items: string[] = [];
+    let current = '';
+    let quote: string | null = null;
+
+    for (const char of inner) {
+      if (quote) {
+        if (char === quote) quote = null;
+        current += char;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+        current += char;
+      } else if (char === ',') {
+        items.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    if (current.trim()) items.push(current);
+    return items;
+  }
+
+  /** Strips matching surrounding quotes from a YAML key (e.g. "200" -> 200). */
+  private unquote(key: string): string {
+    if (
+      (key.startsWith('"') && key.endsWith('"')) ||
+      (key.startsWith("'") && key.endsWith("'"))
+    ) {
+      return key.slice(1, -1);
+    }
+    return key;
   }
 
   private debug(message: string): void {

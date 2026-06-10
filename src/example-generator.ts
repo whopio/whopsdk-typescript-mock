@@ -6,18 +6,20 @@ const RESOURCE_STATUS_DEFAULTS: Record<string, string> = {
   withdrawal: 'requested',
   transfer: 'paid',
   invoice: 'draft',
-  payment: 'pending',
+  payment: 'paid',
   refund: 'pending',
   entry: 'pending',
   verification: 'created',
   dispute: 'needs_response',
   dispute_alert: 'DISPUTE',
   resolution_case: 'merchant_response_needed',
-  setup_intent: 'requires_payment_method',
+  setup_intent: 'requires_action',
   payout_account: 'connected',
   payout_method: 'active',
   ledger_account: 'active',
   membership: 'active',
+  member: 'joined',
+  promo_code: 'active',
 };
 
 const NAME_DEFAULTS: Record<string, unknown> = {

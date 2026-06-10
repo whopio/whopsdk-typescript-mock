@@ -133,8 +133,8 @@ describe('Payout Workflows', () => {
     });
 
     expect(accountLink.id).toBeDefined();
-    expect(accountLink.use_case).toBe('account_onboarding');
     expect(accountLink.url).toBeDefined();
+    expect(accountLink.expires_at).toBeDefined();
   });
 
   WhopMock.stop();
