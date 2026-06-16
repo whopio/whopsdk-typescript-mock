@@ -278,6 +278,7 @@ export const ResourceNames = {
   COMPANY: 'company',
   DISPUTE: 'dispute',
   DISPUTE_ALERT: 'dispute_alert',
+  EVENT: 'event',
   FEE_MARKUP: 'fee_markup',
   INVOICE: 'invoice',
   LEDGER_ACCOUNT: 'ledger_account',
@@ -301,6 +302,7 @@ export const ResourceNames = {
   TRANSFER: 'transfer',
   USER: 'user',
   VERIFICATION: 'verification',
+  WEBHOOK: 'webhook',
   WITHDRAWAL: 'withdrawal',
 } as const;
 

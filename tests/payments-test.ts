@@ -6,7 +6,13 @@
  * invoices and promo codes.
  */
 
-import WhopMock, { ResourceNames } from '../src/index.js';
+import WhopMock, {
+  ResourceNames,
+  WebhookEvents,
+  KNOWN_WEBHOOK_EVENTS,
+  isKnownWebhookEvent,
+} from '../src/index.js';
+import type { WebhookEvent } from '../src/index.js';
 import type { Session } from '../src/session.js';
 
 let failures = 0;
@@ -285,6 +291,75 @@ describe('Membership Lifecycle', () => {
 
     const [, resumed] = call(session, 'POST', `/memberships/${membership.id}/resume`, {});
     expect(resumed.status).toBe('active');
+  });
+
+  WhopMock.stop();
+});
+
+describe('Membership Webhook Events', () => {
+  WhopMock.start();
+
+  it('emits membership.trial_ending_soon and delivers it to listeners', () => {
+    const helper = WhopMock.createTestHelper();
+    const membership = helper.createMembership({ name: 'Gold', status: 'trialing' });
+
+    const received: WebhookEvent[] = [];
+    const unsubscribe = WhopMock.onWebhookEvent((event) => {
+      received.push(event);
+    });
+
+    const event = helper.triggerMembershipTrialEndingSoon(membership);
+
+    expect(event.type).toBe('membership.trial_ending_soon');
+    expect(event.id.startsWith('evt_')).toBeTruthy();
+    expect(event.company_id).toBe(membership.company_id);
+    expect((event.data as Record<string, unknown>).id).toBe(membership.id);
+    expect((event.data as Record<string, unknown>).status).toBe('trialing');
+
+    expect(received.length).toBe(1);
+    expect(received[0].id).toBe(event.id);
+
+    unsubscribe();
+    helper.triggerMembershipTrialEndingSoon(membership);
+    expect(received.length).toBe(1);
+  });
+
+  WhopMock.stop();
+  WhopMock.start();
+
+  it('reports subscribed webhooks in the delivery context', () => {
+    const helper = WhopMock.createTestHelper();
+    const membership = helper.createMembership({ name: 'Silver' });
+    helper.createWebhook({ events: [WebhookEvents.MEMBERSHIP_TRIAL_ENDING_SOON] });
+    helper.createWebhook({ events: [WebhookEvents.MEMBERSHIP_WENT_INVALID] });
+
+    let matched = 0;
+    helper.onWebhookEvent((_event, context) => {
+      matched = context.webhooks.length;
+    });
+
+    helper.triggerMembershipTrialEndingSoon(membership);
+    expect(matched).toBe(1);
+  });
+
+  WhopMock.stop();
+  WhopMock.start();
+
+  it('stores the event so it is retrievable via GET /events/{id}', () => {
+    const session = WhopMock.start();
+    const helper = WhopMock.createTestHelper();
+    const membership = helper.createMembership({ name: 'Bronze' });
+
+    const event = helper.triggerMembershipTrialEndingSoon(membership);
+    const [status, retrieved] = call(session, 'GET', `/events/${event.id}`);
+    expect(status).toBe(200);
+    expect(retrieved.id).toBe(event.id);
+    expect(retrieved.type).toBe('membership.trial_ending_soon');
+  });
+
+  it('recognizes membership.trial_ending_soon as a known event', () => {
+    expect(isKnownWebhookEvent('membership.trial_ending_soon')).toBeTruthy();
+    expect(KNOWN_WEBHOOK_EVENTS.includes('membership.trial_ending_soon')).toBeTruthy();
   });
 
   WhopMock.stop();

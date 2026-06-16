@@ -10,6 +10,7 @@ import { ErrorInjector } from './error-injector.js';
 import { FallbackRegistry } from './fallback-registry.js';
 import { Dispatcher } from './dispatcher.js';
 import { MockRequester } from './mock-requester.js';
+import { WebhookEmitter } from './webhook-emitter.js';
 import type { OpenAPISpec } from './types.js';
 
 /**
@@ -29,6 +30,7 @@ export class Session {
   readonly fallbackRegistry: FallbackRegistry;
   readonly dispatcher: Dispatcher;
   readonly requester: MockRequester;
+  readonly webhookEmitter: WebhookEmitter;
 
   private constructor(options: {
     configuration: Configuration;
@@ -43,6 +45,7 @@ export class Session {
     fallbackRegistry: FallbackRegistry;
     dispatcher: Dispatcher;
     requester: MockRequester;
+    webhookEmitter: WebhookEmitter;
   }) {
     this.configuration = options.configuration;
     this.store = options.store;
@@ -56,6 +59,7 @@ export class Session {
     this.fallbackRegistry = options.fallbackRegistry;
     this.dispatcher = options.dispatcher;
     this.requester = options.requester;
+    this.webhookEmitter = options.webhookEmitter;
   }
 
   static build(options: { specPath?: string; configuration: Configuration }): Session {
@@ -97,6 +101,9 @@ export class Session {
       fallbackRegistry,
     });
 
+    // Build webhook emitter
+    const webhookEmitter = new WebhookEmitter(store, idGenerator);
+
     return new Session({
       configuration,
       store,
@@ -110,6 +117,7 @@ export class Session {
       fallbackRegistry,
       dispatcher,
       requester,
+      webhookEmitter,
     });
   }
 }
