@@ -1,6 +1,12 @@
 import type { ResourceRecord } from './types.js';
 import { ResourceNames } from './types.js';
 import { Session } from './session.js';
+import { WebhookEvents } from './webhook-events.js';
+import type {
+  WebhookEvent,
+  WebhookEventHandler,
+  EmitOptions,
+} from './webhook-emitter.js';
 
 /**
  * Helper for creating test data with proper relationships.
@@ -508,6 +514,58 @@ export class TestHelper {
       membership,
       payment,
     };
+  }
+
+  // ========== Webhooks / Events ==========
+
+  /**
+   * Seed a webhook subscribed to one or more event types. Pass `events: ['*']`
+   * to subscribe to everything. Emitted events whose type matches are reported
+   * in the {@link WebhookEventContext} passed to listeners.
+   */
+  createWebhook(attributes: Record<string, unknown> = {}): ResourceRecord {
+    const events = (attributes.events as string[] | undefined) ?? [
+      WebhookEvents.MEMBERSHIP_TRIAL_ENDING_SOON,
+    ];
+    return this.seed(ResourceNames.WEBHOOK, {
+      api_version: attributes.api_version ?? 'v1',
+      enabled: attributes.enabled ?? true,
+      ...attributes,
+      events,
+    });
+  }
+
+  /** Register a listener invoked for every emitted webhook event. */
+  onWebhookEvent(handler: WebhookEventHandler): () => void {
+    return this.session.webhookEmitter.on(handler);
+  }
+
+  /** Build, store, and deliver a webhook event of the given type. */
+  emitWebhookEvent(type: string, options: EmitOptions = {}): WebhookEvent {
+    return this.session.webhookEmitter.emit(type, options);
+  }
+
+  /**
+   * Emit a `membership.trial_ending_soon` event for a membership. Accepts a
+   * membership record (as returned by {@link createMembership}) or an id; if an
+   * id is given the membership is looked up to populate the payload. Extra
+   * `data` overrides are merged onto the membership snapshot.
+   */
+  triggerMembershipTrialEndingSoon(
+    membership: ResourceRecord | string,
+    overrides: { data?: ResourceRecord; company_id?: string } = {}
+  ): WebhookEvent {
+    const record =
+      typeof membership === 'string'
+        ? this.session.store.find(ResourceNames.MEMBERSHIP, membership) ?? { id: membership }
+        : membership;
+
+    const data: ResourceRecord = { ...record, ...(overrides.data ?? {}) };
+
+    return this.emitWebhookEvent(WebhookEvents.MEMBERSHIP_TRIAL_ENDING_SOON, {
+      company_id: overrides.company_id ?? (record.company_id as string | undefined),
+      data,
+    });
   }
 
   private seed(resourceName: string, overrides: Record<string, unknown> = {}): ResourceRecord {

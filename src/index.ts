@@ -7,11 +7,28 @@ import type {
   ResourceRecord,
   FallbackHandler,
 } from './types.js';
+import type {
+  WebhookEvent,
+  WebhookEventHandler,
+  EmitOptions,
+} from './webhook-emitter.js';
 
 export { WhopMockError, NotFoundError } from './error-injector.js';
 export { ResourceNames } from './types.js';
 export { Store } from './store.js';
 export { TestHelper } from './test-helper.js';
+export {
+  WebhookEvents,
+  KNOWN_WEBHOOK_EVENTS,
+  isKnownWebhookEvent,
+} from './webhook-events.js';
+export type { WebhookEventType } from './webhook-events.js';
+export type {
+  WebhookEvent,
+  WebhookEventHandler,
+  WebhookEventContext,
+  EmitOptions,
+} from './webhook-emitter.js';
 export type {
   WhopMockConfiguration,
   ResourceRecord,
@@ -144,6 +161,24 @@ export function createTestHelper(): TestHelper {
 }
 
 /**
+ * Register a listener invoked for every emitted webhook event. Returns a
+ * function that unsubscribes it. Use this to stand in for your application's
+ * webhook endpoint in tests.
+ */
+export function onWebhookEvent(handler: WebhookEventHandler): () => void {
+  return getSession().webhookEmitter.on(handler);
+}
+
+/**
+ * Build, store, and deliver a webhook event of the given type. The event is
+ * retrievable afterwards via `GET /events/{id}` and delivered to every
+ * listener registered with onWebhookEvent.
+ */
+export function emitWebhookEvent(type: string, options: EmitOptions = {}): WebhookEvent {
+  return getSession().webhookEmitter.emit(type, options);
+}
+
+/**
  * Toggle debug mode
  */
 export function toggleDebug(
@@ -237,6 +272,8 @@ export default {
   seed,
   seedMany,
   createTestHelper,
+  onWebhookEvent,
+  emitWebhookEvent,
   toggleDebug,
   registerFallback,
   clearFallbacks,

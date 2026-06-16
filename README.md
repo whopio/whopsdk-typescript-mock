@@ -78,6 +78,11 @@ it('creates a withdrawal', async () => {
 - `companies` - Company/business accounts
 - `users` - User accounts
 
+**Webhook Events**:
+- `webhooks` - Webhook subscriptions
+- `events` - Emitted webhook events (`retrieve` via `/events/{id}`)
+- Emit/deliver events in-process to test your webhook handlers (e.g. `membership.trial_ending_soon`)
+
 ## API
 
 ### Lifecycle
@@ -152,6 +157,48 @@ const { resolution_case, payment, user, company } = helper.createResolutionCaseW
   resolution_case: { status: 'merchant_response_needed' },
 });
 ```
+
+### Webhook Events
+
+The mock can emit Whop webhook events in-process so you can exercise your
+webhook handlers without standing up a real endpoint. Each emitted event is
+stored (retrievable via `GET /events/{id}`) and delivered to every registered
+listener.
+
+```typescript
+import WhopMock, { WebhookEvents, isKnownWebhookEvent } from 'whopsdk-mock';
+
+const helper = WhopMock.createTestHelper();
+const membership = helper.createMembership({ name: 'Gold', status: 'trialing' });
+
+// Stand in for your application's webhook endpoint.
+const unsubscribe = WhopMock.onWebhookEvent((event, { webhooks }) => {
+  if (event.type === WebhookEvents.MEMBERSHIP_TRIAL_ENDING_SOON) {
+    // assert your handler logic ...
+  }
+});
+
+// High-level trigger for the membership trial-ending event.
+const event = helper.triggerMembershipTrialEndingSoon(membership);
+// event.type === 'membership.trial_ending_soon'
+// event.data is the membership snapshot; event.id is an `evt_...` id
+
+// Low-level emit for any event type.
+WhopMock.emitWebhookEvent('membership.went_invalid', {
+  company_id: membership.company_id,
+  data: { id: membership.id, status: 'expired' },
+});
+
+// Optionally seed webhook subscriptions; matches are reported in the
+// listener's delivery context.
+helper.createWebhook({ events: [WebhookEvents.MEMBERSHIP_TRIAL_ENDING_SOON] });
+
+isKnownWebhookEvent('membership.trial_ending_soon'); // true
+unsubscribe();
+```
+
+Known event types live in `WebhookEvents` / `KNOWN_WEBHOOK_EVENTS`. Emitting an
+unknown type still works — the registry is advisory.
 
 ### Error Injection
 
