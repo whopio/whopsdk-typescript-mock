@@ -354,12 +354,19 @@ test("file ownership and optional account visibility keep fixture clients separa
     (await other.files.list({ file_ids: [file.id] })).data.length,
     0,
   );
-  // A known unattached file ID resolves independently of its creator.
-  await other.disputes.uploadEvidence({
+  // Only the upload's owner can first attach it to a dispute.
+  await assert.rejects(
+    other.disputes.uploadEvidence({
+      id: dispute.id,
+      documents: [{ id: file.id, document_type: "digital_fulfillment" }],
+    }),
+    httpError(400),
+  );
+  await client.disputes.uploadEvidence({
     id: dispute.id,
     documents: [{ id: file.id, document_type: "digital_fulfillment" }],
   });
-  await client.disputes.uploadEvidence({
+  await other.disputes.uploadEvidence({
     id: dispute.id,
     documents: [{ id: file.id, document_type: "digital_fulfillment" }],
   });

@@ -1398,7 +1398,11 @@ export class CurrentApi {
       bad("Evidence attachment must have a file id");
     const file = this.store.find("file", ref.id);
     if (!file && !document) throw new ApiError(404, "File not found");
-    if (!file || (file._disputeId && file._disputeId !== disputeId))
+    if (
+      !file ||
+      (!file._disputeId && file._actor !== actor) ||
+      (file._disputeId && file._disputeId !== disputeId)
+    )
       bad("File is unavailable to this dispute");
     if (file.upload_status !== "ready")
       bad("File upload must finish before attaching evidence");

@@ -112,9 +112,20 @@ export function paymentResponse(
     record.total === null
       ? null
       : money(record.total ?? record.amount, currency);
-  const zero = total
-    ? { ...total, amount: (0).toFixed(total.decimals) }
-    : money(0, currency);
+  const template =
+    total ??
+    money(
+      [
+        record.amount_after_fees,
+        record.tax_refunded_amount,
+        record.presentment_total,
+      ].find((value) => object(value).currency === currency) ?? 0,
+      currency,
+    );
+  const zero = {
+    ...template,
+    amount: template.decimals ? `0.${"0".repeat(template.decimals)}` : "0",
+  };
   const defaults = {
     account_id: (record.account_id ?? record.company_id ?? null) as
       | string

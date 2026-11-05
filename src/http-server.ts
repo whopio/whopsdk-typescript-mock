@@ -370,6 +370,14 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
     if (!value || typeof value !== "object") return value;
     return Object.fromEntries(
       Object.entries(value).map(([key, entry]) => {
+        // Caller-controlled URLs and opaque JSON must never mint file capabilities.
+        if (
+          key === "metadata" ||
+          key === "response_body" ||
+          (key === "url" &&
+            String((value as ResourceRecord).id).startsWith("hook_"))
+        )
+          return [key, entry];
         if (
           ["upload_url", "url"].includes(key) &&
           typeof entry === "string" &&
@@ -677,6 +685,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
             "warning_under_review",
             "won",
             "lost",
+            "prevented",
             "warning_closed",
             "closed",
           ].includes(status)
@@ -820,6 +829,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
             "warning_under_review",
             "won",
             "lost",
+            "prevented",
             "closed",
             "warning_closed",
           ].includes(String(body.status))

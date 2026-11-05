@@ -59,6 +59,12 @@ Use synthetic data. Everything is memory-backed; reset/restart removes custom
 records, uploads, events and generated credentials. Separate simultaneous test
 suites should use their own process/port.
 
+This service is for trusted local/CI testing. The startup script binds to loopback,
+and demo credentials are public. The admin token controls every fixture in an
+instance; keep it with the test operator. The server has per-request size limits
+but no rate limits or total-memory quotas. Sharing it remotely requires separate
+access controls and resource limits; do not expose the default setup publicly.
+
 Numeric money values are USD major units. For other currencies provide explicit
 Money objects, for example
 `{"amount":"89.99","currency":"eur","decimals":2,"display_decimals":2}`.
@@ -72,6 +78,13 @@ DTO-only seeds assume no buyer fees: `presentment_total` is also the charged tot
 Buyer-fee calculation is outside this fixture importer. Supply an explicit
 `substatus` to test dispute/refund status combinations. Legacy card snapshots may be
 null even when `payment_instrument.card` is populated.
+
+Seeds accept `prevented` disputes and explicit Money precision, including 18 decimals.
+The importer caps `Money.decimals` at 100 to bound allocations; this is a local
+fixture limit, not a restriction in Whop's public schema.
+For `payment.total: null`, supply `presentment_total`; for `refund.amount: null`,
+supply `original_amount`. Unknown settlement totals stay null. Refund API writes
+require known settlement and charge balances and return a local 501 otherwise.
 
 No live FX lookup or money movement occurs. Partial refund writes use the seeded
 settlement/charge ratio and integer minor-unit arithmetic. Account/payment links, refund totals
@@ -240,6 +253,10 @@ The supplied demo receiver defaults to the server-level secret. Restart it with
 The registration URL must match the server's `WHOP_MOCK_WEBHOOK_URL` for HTTP delivery.
 
 Subscribed seeded events and simulated payment/refund changes deliver automatically.
+For `payment.failed`, transition to `status: "open", substatus: "failed"`.
+For [`payment.requires_action`](https://docs.whop.com/api-reference/beta/payments/payment-requires-action),
+use `status: "open", substatus: "incomplete"`, `payment_status.status: "requires_action"`
+and a non-null `recovery_url`. Repeating the same state does not emit another event.
 `GET /webhooks/{id}/deliveries` exposes attempts and cursor pagination.
 `POST /webhooks/{id}/deliveries/{delivery_id}/replay` sends the stored payload to
 the hook's current URL; `{"regenerate_id":true}` gives it a new signed event ID.
