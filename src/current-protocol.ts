@@ -154,7 +154,11 @@ export function can(
   return scopes.includes(scope) || scopes.includes("*");
 }
 export function readScope(resource: string): string {
-  return resource === "dispute" ? "payment:dispute:read" : "payment:basic:read";
+  return resource === "dispute"
+    ? "payment:dispute:read"
+    : resource === "dispute_alert"
+      ? "payment:dispute_alert:read"
+      : "payment:basic:read";
 }
 
 /** Keyset pagination using fixture insertion order as a stable tie breaker. */

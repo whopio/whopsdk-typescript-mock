@@ -4,7 +4,7 @@ import { Store } from './store.js';
 import { IdGenerator } from './id-generator.js';
 import { isKnownWebhookEvent } from './webhook-events.js';
 import { randomUUID } from 'node:crypto';
-import { API_VERSION_DATE, disputeResponse, paymentResponse, refundResponse } from './current-responses.js';
+import { API_VERSION_DATE, disputeAlertResponse, disputeResponse, paymentResponse, refundResponse } from './current-responses.js';
 
 /** The envelope Whop delivers to a webhook URL. Mirrors the `Event` schema. */
 export interface WebhookEvent {
@@ -34,7 +34,7 @@ export type WebhookEventHandler = (
 export interface EmitOptions {
   company_id?: string;
   account_id?: string;
-  /** Dispute/payment/refund event types default to the tested SDK pin; older dates retain company_id. */
+  /** Dispute, alert, payment and refund event types default to the tested SDK pin; older dates retain company_id. */
   api_version_date?: string;
   data?: ResourceRecord;
   /** Override the generated timestamp/created_at (ISO 8601). */
@@ -87,13 +87,14 @@ export class WebhookEmitter {
   emit(type: string, options: EmitOptions = {}): WebhookEvent {
     const now = options.timestamp ?? new Date().toISOString();
     let data: ResourceRecord = structuredClone(options.data ?? {});
-    const currentEvent = ['dispute', 'payment', 'refund'].includes(type.split('.')[0]);
+    const currentEvent = ['dispute', 'dispute_alert', 'payment', 'refund'].includes(type.split('.')[0]);
     const version = options.api_version_date ?? (currentEvent ? API_VERSION_DATE : undefined);
     const modern = version !== undefined && version >= '2026-08-14';
     if (modern && data.id) {
       const resource = type.split('.')[0];
       const record = this.store.find(resource, String(data.id)) ?? data;
       if (resource === 'dispute') data = disputeResponse(record, this.store);
+      if (resource === 'dispute_alert') data = disputeAlertResponse(record, this.store);
       if (resource === 'payment') data = paymentResponse(record);
       if (resource === 'refund') data = refundResponse(record, this.store);
     }

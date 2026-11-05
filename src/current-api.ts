@@ -12,6 +12,7 @@ import {
   EVIDENCE_SLOTS,
   EVIDENCE_TEXT_FIELDS,
   object,
+  disputeAlertResponse,
   disputeResponse,
   evidenceResponse,
   fileResponse,
@@ -149,7 +150,7 @@ export class CurrentApi {
         request.headers.get("api-version-date"),
       ).effective;
       const match = url.pathname.match(
-        /^\/api\/v1\/(disputes|payments|refunds|files|webhooks)(?:\/([^/]+))?(?:\/([^/]+))?(?:\/([^/]+))?(?:\/([^/]+))?\/?$/,
+        /^\/api\/v1\/(disputes|dispute_alerts|payments|refunds|files|webhooks)(?:\/([^/]+))?(?:\/([^/]+))?(?:\/([^/]+))?(?:\/([^/]+))?\/?$/,
       );
       if (!match) unsupported(`${request.method} ${url.pathname}`);
       const [, plural, id, action] = match!;
@@ -483,6 +484,8 @@ export class CurrentApi {
       return result;
     }
     if (resource === "refund") return refundResponse(record, this.store);
+    if (resource === "dispute_alert")
+      return disputeAlertResponse(record, this.store);
     return fileResponse(record);
   }
 
@@ -569,23 +572,25 @@ export class CurrentApi {
           ? ["account_id", "status", "currency"]
           : resource === "refund"
             ? ["account_id", "payment_id", "user_id"]
-            : [
-                "account_id",
-                "status",
-                "statuses",
-                "substatuses",
-                "currency",
-                "currencies",
-                "product_id",
-                "product_ids",
-                "variant_id",
-                "variant_ids",
-                "membership_id",
-                "member_id",
-                "user_id",
-                "billing_reason",
-                "billing_reasons",
-              ];
+            : resource === "dispute_alert"
+              ? ["account_id", "payment_id", "type"]
+              : [
+                  "account_id",
+                  "status",
+                  "statuses",
+                  "substatuses",
+                  "currency",
+                  "currencies",
+                  "product_id",
+                  "product_ids",
+                  "variant_id",
+                  "variant_ids",
+                  "membership_id",
+                  "member_id",
+                  "user_id",
+                  "billing_reason",
+                  "billing_reasons",
+                ];
     const allowed = [
       ...filters,
       "first",
@@ -725,6 +730,12 @@ export class CurrentApi {
         !this.store.find("user", query.get("user_id")!)
       )
         throw new ApiError(404, "User not found");
+    }
+    if (resource === "dispute_alert") {
+      const types = queryChoices("/dispute_alerts", "type");
+      for (const value of query.getAll("type"))
+        if (!types.includes(value))
+          bad(`Invalid type '${value}'. Allowed: ${types.join(", ")}`);
     }
     const statuses =
       resource === "dispute"
@@ -1119,7 +1130,9 @@ export class CurrentApi {
         ? ["created_at", "amount", "evidence_due_at"]
         : resource === "payment"
           ? ["created_at", "paid_at", "amount"]
-          : ["created_at"];
+          : resource === "dispute_alert"
+            ? queryChoices("/dispute_alerts", "order")
+            : ["created_at"];
     if (!orders.includes(order))
       bad(`order must be one of: ${orders.join(", ")}`);
     const direction = query.get("direction") || "desc";
@@ -1145,17 +1158,19 @@ export class CurrentApi {
           raw._databaseId ?? this.sequences.get(`${resource}:${raw.id}`),
         );
         const rawValue =
-          order === "amount"
-            ? Number(
-                raw.final_amount ??
-                  object(raw.presentment_total).amount ??
-                  object(raw.total).amount ??
-                  raw.total ??
-                  raw.amount,
-              )
-            : order === "evidence_due_at"
-              ? (raw.due_date ?? value.evidence_due_at)
-              : raw[order];
+          resource === "dispute_alert"
+            ? value[order]
+            : order === "amount"
+              ? Number(
+                  raw.final_amount ??
+                    object(raw.presentment_total).amount ??
+                    object(raw.total).amount ??
+                    raw.total ??
+                    raw.amount,
+                )
+              : order === "evidence_due_at"
+                ? (raw.due_date ?? value.evidence_due_at)
+                : raw[order];
         const key =
           rawValue == null
             ? null

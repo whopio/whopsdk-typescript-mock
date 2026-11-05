@@ -28,6 +28,7 @@ test("actual HTTP bodies conform to the independently generated Whop OpenAPI sch
     payment_id: stack.payment.id,
     amount: 10,
   });
+  const alert = helper.createDisputeAlert({ payment_id: stack.payment.id });
   const transport = WhopMock.createFetch();
   const validate = (name, value) => {
     const validator = ajv.getSchema(`whop#/components/schemas/${name}`);
@@ -37,6 +38,7 @@ test("actual HTTP bodies conform to the independently generated Whop OpenAPI sch
     [`disputes/${stack.dispute.id}`, "Dispute"],
     [`payments/${stack.payment.id}`, "Payment"],
     [`refunds/${refund.id}`, "Refund"],
+    [`dispute_alerts/${alert.id}`, "DisputeAlert"],
   ]) {
     const response = await transport(`https://api.whop.mock/api/v1/${path}`);
     assert.equal(response.status, 200);
@@ -78,6 +80,12 @@ test("actual HTTP bodies conform to the independently generated Whop OpenAPI sch
     "Dispute",
     WhopMock.emitWebhookEvent("dispute.updated", {
       data: { id: stack.dispute.id },
+    }).data,
+  );
+  validate(
+    "DisputeAlert",
+    WhopMock.emitWebhookEvent("dispute_alert.created", {
+      data: { id: alert.id },
     }).data,
   );
 });

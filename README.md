@@ -21,9 +21,9 @@ npm run smoke:disputes
 ```
 
 Seeding returns your merchant's test API keys and linked dispute/payment/refund
-IDs. Use the returned key with `http://127.0.0.1:4100/api/v1`. You can list/read
-cases, edit and upload evidence, submit or accept disputes, and drive simulated
-outcomes and webhooks. [Start here](examples/http/README.md#seed-your-own-dispute-cases).
+and dispute-alert IDs. Use the returned key with `http://127.0.0.1:4100/api/v1`.
+You can list/read cases and dispute alerts, edit and upload evidence, submit or
+accept disputes, and drive simulated outcomes and webhooks. [Start here](examples/http/README.md#seed-your-own-dispute-cases).
 `smoke:disputes` exercises the whole flow with fresh data without resetting other
 cases. The service remains local; each tester can run a copy of this repository.
 
@@ -54,11 +54,11 @@ npm run check:docs     # read current docs.whop.com and detect contract drift
 npm run serve:mock    # optional local API: http://127.0.0.1:4100/api/v1
 ```
 
-The audit covers the 36 public operations indexed by docs.whop.com in the dispute,
-payment, refund, file and webhook areas. Tests execute every operation and check
-response shapes against 57 referenced schemas extracted only from those public
-pages. All eleven local lifecycle events have resource-data and signature checks.
-The nine indexed webhook pages omit envelope schemas; `check:docs` reports that
+The audit covers the 38 public operations indexed by docs.whop.com in the dispute,
+dispute-alert, payment, refund, file and webhook areas. Tests execute every operation
+and check response shapes against 58 referenced schemas extracted only from those
+public pages. All twelve local lifecycle events have resource-data and signature
+checks. The ten indexed webhook pages omit envelope schemas; `check:docs` reports that
 verification gap rather than claiming full webhook payload parity.
 The SDK is pinned to 2.7.0. The default mock API date is `2026-10-28`.
 Any valid date (including release suffixes) is accepted and uses the closest
@@ -67,7 +67,7 @@ The effective date is returned in `x-whop-mock-api-version`. This permissive
 fallback is a mock convenience, not Whop's real version-negotiation behavior.
 
 The fixture engine now supports payment updates, refunds, capture/status/retry/void,
-receipt PDFs, and webhook registration, delivery logs and replay. Payment creation
+receipt PDFs, dispute alerts, and webhook registration, delivery logs and replay. Payment creation
 uses explicitly seeded request/result pairs; processor completion uses admin test
 controls. [See the complete scope, examples and limitations](examples/http/README.md#complete-current-api-scope).
 

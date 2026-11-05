@@ -11,7 +11,9 @@ const live = JSON.parse(readFileSync(docsPath, "utf8"));
 const paths = Object.fromEntries(
   Object.entries(live.paths)
     .filter(([path]) =>
-      /^\/(disputes|payments|refunds|files|webhooks)(\/|$)/.test(path),
+      /^\/(disputes|dispute_alerts|payments|refunds|files|webhooks)(\/|$)/.test(
+        path,
+      ),
     )
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
 );
@@ -81,7 +83,7 @@ for (const [path, methods] of Object.entries(paths)) {
 // Include payload schemas only when the public export actually supplies them.
 const webhooks = Object.fromEntries(
   Object.entries(live.webhooks ?? {})
-    .filter(([name]) => /^(dispute|payment|refund)\./.test(name))
+    .filter(([name]) => /^(dispute|dispute_alert|payment|refund)\./.test(name))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([name, methods]) => [
       name,

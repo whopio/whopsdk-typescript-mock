@@ -566,6 +566,47 @@ test("public status vocabulary excludes RDR/internal cases, validates filters an
   assert.equal(response.status, 400);
 });
 
+test("older helper alerts read through the current dispute-alert API and events", async () => {
+  const { payment, company } = stack({}, { paid_at: "2026-09-30T00:00:00Z" });
+  const helper = WhopMock.createTestHelper();
+  // The older helper vocabulary: alert_type, charge_for_alert, transaction_date.
+  const fraud = helper.createDisputeAlert({
+    company_id: company.id,
+    payment_id: payment.id,
+    alert_type: "FRAUD",
+    charge_for_alert: true,
+  });
+  const rdr = helper.createDisputeAlert({
+    company_id: company.id,
+    payment_id: payment.id,
+    alert_type: "DISPUTE_RDR",
+    transaction_date: "2026-09-29T00:00:00Z",
+  });
+  assert.match(fraud.id, /^dspa_/);
+  const read = await client.disputeAlerts.retrieve({ id: fraud.id });
+  assert.equal(read.type, "early_fraud_warning");
+  assert.equal(read.category, "fraud");
+  assert.equal(read.fee_charged, false, "fraud warnings are never billed");
+  assert.equal(read.fee, null);
+  assert.equal(read.account_id, company.id);
+  assert.equal(read.transaction_at, "2026-09-30T00:00:00Z");
+  const notice = await client.disputeAlerts.retrieve({ id: rdr.id });
+  assert.equal(notice.type, "rapid_dispute_resolution");
+  assert.equal(notice.source, "rdr");
+  assert.equal(notice.transaction_at, "2026-09-29T00:00:00Z");
+  assert.deepEqual(
+    (
+      await client.disputeAlerts.list({ type: "rapid_dispute_resolution" })
+    ).data.map((row) => row.id),
+    [rdr.id],
+  );
+  const event = WhopMock.emitWebhookEvent("dispute_alert.created", {
+    data: { id: fraud.id },
+  });
+  assert.equal(event.account_id, company.id);
+  assert.deepEqual(event.data, read);
+});
+
 test("legacy install preserves record-returning dispute actions and uninstall restores its requester", async () => {
   const { dispute } = stack();
   const originalRequester = {

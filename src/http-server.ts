@@ -160,6 +160,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
   let idempotency = new IdempotencyStore();
   const fullScopes = [
     "payment:dispute:read",
+    "payment:dispute_alert:read",
     "payment:dispute",
     "payment:basic:read",
     "member:email:read",
@@ -606,6 +607,9 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
             account_ids: session.store.list("company").map((row) => row.id),
             payment_ids: session.store.list("payment").map((row) => row.id),
             dispute_ids: session.store.list("dispute").map((row) => row.id),
+            dispute_alert_ids: session.store
+              .list("dispute_alert")
+              .map((row) => row.id),
             refund_ids: session.store.list("refund").map((row) => row.id),
           },
           api_version_date: API_VERSION_DATE,
@@ -759,7 +763,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
       if (url.pathname === "/_test/failures" && method === "POST") {
         const status = Number(body.status);
         if (
-          !/^(retrieve|list|update|create|delete|submit|upload_evidence|accept|complete|capture|generate_pdf|refund|retry|void|resume|return_url|status|summary|list_fees|list_deliveries|replay|test)_(dispute|payment|refund|file|webhook)$/.test(
+          !/^(retrieve|list|update|create|delete|submit|upload_evidence|accept|complete|capture|generate_pdf|refund|retry|void|resume|return_url|status|summary|list_fees|list_deliveries|replay|test)_(dispute|dispute_alert|payment|refund|file|webhook)$/.test(
             String(body.action),
           ) ||
           ![400, 403, 404, 409, 429, 500, 503].includes(status)
@@ -894,6 +898,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
           ![
             "dispute.created",
             "dispute.updated",
+            "dispute_alert.created",
             "payment.succeeded",
             "payment.failed",
             "payment.created",
@@ -921,7 +926,7 @@ export function createHttpTestServer(options: HttpTestOptions): Server {
         )
           throw new HttpError(
             400,
-            "Visa RDR uses dispute-alert events on the native API",
+            "Visa RDR uses dispute-alert events on the native API; seed a rapid_dispute_resolution alert and emit dispute_alert.created",
           );
         // Snapshot the public HTTP representation so files in webhook data have usable URLs.
         const event = session.webhookEmitter.emit(type, {

@@ -22,6 +22,11 @@ try {
     payment_id: stack.payment.id,
     amount: 20,
   });
+  const alert = helper.createDisputeAlert({
+    payment_id: stack.payment.id,
+    type: "early_fraud_warning",
+    source: "tc40",
+  });
   const pending = await client.files.create({ filename: "evidence.pdf" });
   await fetch(pending.upload_url, {
     method: "PUT",
@@ -40,6 +45,7 @@ try {
     Payment: await client.payments.retrieve({ id: stack.payment.id }),
     Refund: await client.refunds.retrieve({ id: refund.id }),
     File_: await client.files.retrieve({ id: pending.id }),
+    DisputeAlert: await client.disputeAlerts.retrieve({ id: alert.id }),
   };
   const root = fileURLToPath(new URL("../", import.meta.url));
   const virtualPath = path.join(root, "scripts/__current_contract__.mts");
@@ -48,7 +54,7 @@ try {
     Object.entries(samples)
       .map(
         ([type, value]) =>
-          `const ${type.toLowerCase()} = ${JSON.stringify(value)} satisfies Whop.${type}${type === "Dispute" ? " & { fee_charged: boolean }" : type === "Payment" ? " & { user_agent: string | null; wuid: string | null }" : ""};`,
+          `const ${type.toLowerCase()} = ${JSON.stringify(value)} satisfies Whop.${type}${type === "Dispute" ? " & { fee_charged: boolean }" : type === "Payment" ? " & { user_agent: string | null; wuid: string | null }" : type === "DisputeAlert" ? ' & { category: "fraud" | "customer_dispute" | null }' : ""};`,
       )
       .join("\n");
   const options = {
@@ -89,6 +95,8 @@ try {
   assert.equal(samples.Dispute.fee_charged, false);
   assert.equal(samples.Dispute.evidence.documents[0].id, samples.File_.id);
   assert.equal(samples.Refund.payment_id, samples.Payment.id);
+  assert.equal(samples.DisputeAlert.payment_id, samples.Payment.id);
+  assert.equal(samples.DisputeAlert.category, "fraud");
   const report = {
     checked_at: new Date().toISOString(),
     sdk: JSON.parse(
@@ -100,11 +108,11 @@ try {
     status: "passed",
     checks: [
       "Current SDK public fetch transport",
-      "Dispute, Payment, Refund, File DTOs satisfy SDK declarations (including nested values)",
+      "Dispute, Payment, Refund, File, DisputeAlert DTOs satisfy SDK declarations (including nested values)",
       "ISO creation timestamps",
       "Current account vocabulary",
-      "Linked payment/refund/file references",
-      "Current fee_charged field",
+      "Linked payment/refund/file/alert references",
+      "Current fee_charged and alert category fields",
     ],
     limitations:
       "Selected fixture samples and contracts, not live API certification. Additive fields newer than SDK 2.7.0 are checked explicitly and against the vendored OpenAPI. Run npm run test:compat for lifecycle and negative cases.",
@@ -112,7 +120,7 @@ try {
   console.log(
     process.argv.includes("--json")
       ? JSON.stringify(report, null, 2)
-      : `Contract audit passed: SDK ${report.sdk}, API ${API_VERSION_DATE}; four runtime DTOs type-check.`,
+      : `Contract audit passed: SDK ${report.sdk}, API ${API_VERSION_DATE}; five runtime DTOs type-check.`,
   );
 } finally {
   WhopMock.stop();

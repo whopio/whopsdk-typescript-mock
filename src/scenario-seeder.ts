@@ -4,6 +4,7 @@ import { Session } from "./session.js";
 import { TestHelper } from "./test-helper.js";
 import { ApiError } from "./current-protocol.js";
 import {
+  disputeAlertResponse,
   disputeResponse,
   paymentResponse,
   refundResponse,
@@ -131,47 +132,72 @@ const seedSchema = ajv.compile({
             ["account_id", "refunded_amount", "presentment_refunded_amount"],
             { total: amount },
           ),
-          dispute: inputSchema(
-            "Dispute",
-            [
-              "account_id",
-              "payment",
-              "acceptable",
-              "evidence_editable",
-              "evidence_locked_reason",
-              "fee_charged",
-            ],
-            {
-              provider: { type: "string", minLength: 1 },
-              sub_provider: { type: ["string", "null"] },
-              visa_rdr: { type: "boolean" },
-              status: {
-                enum: [
-                  "needs_response",
-                  "warning_needs_response",
-                  "under_review",
-                  "warning_under_review",
-                  "won",
-                  "lost",
-                  "prevented",
-                  "closed",
-                  "warning_closed",
+          dispute: {
+            anyOf: [
+              { type: "null" },
+              inputSchema(
+                "Dispute",
+                [
+                  "account_id",
+                  "payment",
+                  "acceptable",
+                  "evidence_editable",
+                  "evidence_locked_reason",
+                  "fee_charged",
                 ],
+                {
+                  provider: { type: "string", minLength: 1 },
+                  sub_provider: { type: ["string", "null"] },
+                  visa_rdr: { type: "boolean" },
+                  status: {
+                    enum: [
+                      "needs_response",
+                      "warning_needs_response",
+                      "under_review",
+                      "warning_under_review",
+                      "won",
+                      "lost",
+                      "prevented",
+                      "closed",
+                      "warning_closed",
+                    ],
+                  },
+                  reason: { type: "string", minLength: 1 },
+                  buyer: inputSchema("DisputeBuyer", []),
+                  evidence: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: Object.fromEntries(
+                      EVIDENCE_TEXT_FIELDS.map((key) => [
+                        key,
+                        { type: ["string", "null"] },
+                      ]),
+                    ),
+                  },
+                },
+              ),
+            ],
+          },
+          // Account, payment, product and auto_refunded follow the scenario's payment.
+          alerts: {
+            type: "array",
+            maxItems: 100,
+            items: inputSchema(
+              "DisputeAlert",
+              [
+                "account_id",
+                "payment_id",
+                "product_id",
+                "auto_refunded",
+                "issuer",
+              ],
+              {
+                amount: { type: "number", minimum: 0 },
+                currency: { type: "string", pattern: "^[a-z]{3}$" },
+                fee: amount,
               },
-              reason: { type: "string", minLength: 1 },
-              buyer: inputSchema("DisputeBuyer", []),
-              evidence: {
-                type: "object",
-                additionalProperties: false,
-                properties: Object.fromEntries(
-                  EVIDENCE_TEXT_FIELDS.map((key) => [
-                    key,
-                    { type: ["string", "null"] },
-                  ]),
-                ),
-              },
-            },
-          ),
+            ),
+          },
           refunds: {
             type: "array",
             maxItems: 100,
@@ -300,6 +326,7 @@ export function seedScenarios(
     const p = (entry.payment ?? {}) as ResourceRecord;
     const d = (entry.dispute ?? {}) as ResourceRecord;
     const refunds = (entry.refunds ?? []) as ResourceRecord[];
+    const alerts = (entry.alerts ?? []) as ResourceRecord[];
     const currency = String(
       p.currency ??
         (typeof p.total === "object" && p.total
@@ -457,15 +484,18 @@ export function seedScenarios(
         payment_status: entry.payment_status ?? {},
       });
     }
-    const dispute = helper.createDispute({
-      provider: "stripe",
-      ...d,
-      id: reserveId("dispute", d.id, "dspt_"),
-      company_id: company.id,
-      payment_id: payment.id,
-      currency: disputeCurrency,
-      amount: disputeAmount,
-    });
+    const dispute =
+      entry.dispute === null
+        ? null
+        : helper.createDispute({
+            provider: "stripe",
+            ...d,
+            id: reserveId("dispute", d.id, "dspt_"),
+            company_id: company.id,
+            payment_id: payment.id,
+            currency: disputeCurrency,
+            amount: disputeAmount,
+          });
     const createdRefunds = refunds.map((refund, i) =>
       helper.createRefund({
         ...refund,
@@ -480,24 +510,102 @@ export function seedScenarios(
       paymentResponse(stage.store.find("payment", String(payment.id))!),
       "payment response",
     );
-    check(
-      ajv.getSchema("whop#/components/schemas/Dispute")!,
-      disputeResponse(
-        stage.store.find("dispute", String(dispute.id))!,
-        stage.store,
-      ),
-      "dispute response",
-    );
+    if (dispute)
+      check(
+        ajv.getSchema("whop#/components/schemas/Dispute")!,
+        disputeResponse(
+          stage.store.find("dispute", String(dispute.id))!,
+          stage.store,
+        ),
+        "dispute response",
+      );
     for (const refund of createdRefunds)
       check(
         ajv.getSchema("whop#/components/schemas/Refund")!,
         refundResponse(refund, stage.store),
         "refund response",
       );
+    const createdAlerts = alerts.map((alert) => {
+      const type = String(alert.type ?? "dispute_alert");
+      const fee =
+        alert.fee == null
+          ? null
+          : amountValue(
+              alert.fee,
+              String(
+                typeof alert.fee === "object"
+                  ? (alert.fee as ResourceRecord).currency
+                  : "usd",
+              ),
+              "alert.fee",
+            ).money;
+      const feeCharged = alert.fee_charged ?? fee !== null;
+      if (feeCharged && !fee)
+        invalid(
+          "alert.fee_charged needs an explicit fee; fees are not inferred",
+        );
+      if (!feeCharged && fee)
+        invalid("alert.fee must be null when fee_charged is false");
+      if (type === "early_fraud_warning" && feeCharged)
+        invalid("early_fraud_warning alerts are never charged a fee");
+      if (
+        type === "early_fraud_warning" &&
+        (alert.category ?? "fraud") !== "fraud"
+      )
+        invalid("early_fraud_warning alerts always have category fraud");
+      const createdAt = String(alert.created_at ?? new Date().toISOString());
+      const reportedAt = String(alert.reported_at ?? createdAt);
+      if (Date.parse(reportedAt) > Date.parse(createdAt))
+        invalid(
+          "alert.reported_at must not be later than created_at, when Whop received the alert",
+        );
+      // Without its own transaction_at, an alert reports on the payment's time.
+      const transactionAt =
+        alert.transaction_at !== undefined
+          ? alert.transaction_at
+          : (payment.paid_at ?? payment.created_at);
+      if (
+        transactionAt != null &&
+        Date.parse(String(transactionAt)) > Date.parse(reportedAt)
+      )
+        invalid(
+          "alert.transaction_at must not be later than reported_at; backdate the payment or set transaction_at",
+        );
+      return helper.createDisputeAlert({
+        ...alert,
+        id: reserveId("dispute_alert", alert.id, "dspa_"),
+        company_id: company.id,
+        payment_id: payment.id,
+        type,
+        // Keep the older helper vocabulary consistent with the public fields.
+        alert_type: {
+          dispute_alert: "DISPUTE",
+          rapid_dispute_resolution: "DISPUTE_RDR",
+          early_fraud_warning: "FRAUD",
+        }[type],
+        fee_charged: feeCharged,
+        charge_for_alert: feeCharged,
+        fee,
+        amount: alert.amount ?? Number(presentment.money.amount),
+        currency: alert.currency ?? presentment.money.currency,
+        created_at: createdAt,
+        reported_at: reportedAt,
+      });
+    });
+    for (const alert of createdAlerts)
+      check(
+        ajv.getSchema("whop#/components/schemas/DisputeAlert")!,
+        disputeAlertResponse(
+          stage.store.find("dispute_alert", String(alert.id))!,
+          stage.store,
+        ),
+        "alert response",
+      );
     cases.push({
-      dispute_id: dispute.id,
+      dispute_id: dispute?.id ?? null,
       payment_id: payment.id,
       refund_ids: createdRefunds.map((refund) => refund.id),
+      alert_ids: createdAlerts.map((alert) => alert.id),
     });
   }
   // Only commit after the whole batch passes. Staging uses the same original engine,
@@ -507,6 +615,7 @@ export function seedScenarios(
     "user",
     "payment",
     "dispute",
+    "dispute_alert",
     "refund",
     "payment_creation",
   ])

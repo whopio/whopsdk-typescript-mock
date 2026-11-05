@@ -47,7 +47,7 @@ try {
       indexes
         .join("\n")
         .match(
-          /https:\/\/docs\.whop\.com\/api-reference\/beta\/(?:disputes|payments|refunds|files|webhooks)\/[^)\s]+\.md/g,
+          /https:\/\/docs\.whop\.com\/api-reference\/beta\/(?:disputes|dispute-alerts|payments|refunds|files|webhooks)\/[^)\s]+\.md/g,
         ),
     ),
   ];
@@ -69,8 +69,12 @@ try {
         const page = await download(url),
           block = page.match(/````yaml[^\n]*\n([\s\S]*?)\n````/);
         if (!block) {
-          // These five model overview pages have no embedded OpenAPI; endpoint pages do.
-          if (/\/(dispute|payment|refund|file|webhook)\.md$/.test(url))
+          // These six model overview pages have no embedded OpenAPI; endpoint pages do.
+          if (
+            /\/(dispute|dispute-alert|payment|refund|file|webhook)\.md$/.test(
+              url,
+            )
+          )
             continue;
           throw new Error(`No readable OpenAPI block in ${url}`);
         }

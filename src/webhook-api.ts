@@ -29,7 +29,7 @@ const TESTABLE_EVENTS = EVENT_NAMES.filter(
     SUBSCRIBABLE_EVENTS.includes(name) || name.startsWith("withdrawal."),
 );
 const LOCAL_EVENTS = EVENT_NAMES.filter((name) =>
-  /^(dispute|payment|refund)\./.test(name),
+  /^(dispute|dispute_alert|payment|refund)\./.test(name),
 );
 const RETRIES = [
   30, 120, 480, 1800, 3600, 10800, 21600, 43200, 43200, 43200, 43200, 43200,
@@ -319,7 +319,7 @@ export class WebhookApi {
       const eventName = events([body.event])[0];
       if (!LOCAL_EVENTS.includes(eventName))
         unsupported(
-          `test payloads for ${eventName}; this fixture engine covers dispute, payment and refund events`,
+          `test payloads for ${eventName}; this fixture engine covers dispute, dispute alert, payment and refund events`,
         );
       const resource = eventName.split(".")[0];
       const row = this.session.store
