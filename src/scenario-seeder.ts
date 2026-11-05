@@ -22,6 +22,8 @@ const snapshot = JSON.parse(
   ),
 );
 const schemas = snapshot.components.schemas;
+// Local allocation limit, not a restriction in Whop's public Money schema.
+schemas.Money.properties.decimals.maximum = 100;
 const ajv = new Ajv({
   allErrors: true,
   nullable: true,
@@ -53,6 +55,7 @@ const amount = {
   anyOf: [
     { $ref: "whop#/components/schemas/Money" },
     { type: "number", minimum: 0 },
+    { type: "null" },
   ],
 };
 const seedSchema = ajv.compile({
@@ -150,6 +153,7 @@ const seedSchema = ajv.compile({
                   "warning_under_review",
                   "won",
                   "lost",
+                  "prevented",
                   "closed",
                   "warning_closed",
                 ],
@@ -223,9 +227,7 @@ function amountValue(value: unknown, currency: string, label: string) {
     result.currency !== currency ||
     !/^[a-z]{3}$/.test(currency) ||
     result.decimals < 0 ||
-    result.decimals > 8 ||
     result.display_decimals < 0 ||
-    result.display_decimals > 8 ||
     Number(result.amount) < 0 ||
     !Number.isFinite(Number(result.amount))
   )
@@ -304,7 +306,10 @@ export function seedScenarios(
           ? (p.total as ResourceRecord).currency
           : "usd"),
     );
-    const total = amountValue(p.total ?? 99.99, currency, "payment.total");
+    const total =
+      p.total === null
+        ? null
+        : amountValue(p.total ?? 99.99, currency, "payment.total");
     const presentment =
       p.presentment_total == null
         ? total
@@ -313,45 +318,55 @@ export function seedScenarios(
             String((p.presentment_total as ResourceRecord).currency),
             "payment.presentment_total",
           );
-    if (total.units <= 0n)
-      invalid("payment.total must be positive for a dispute fixture");
+    if (!presentment)
+      invalid("A null payment.total requires an explicit presentment_total");
+    if ((total && total.units <= 0n) || presentment.units <= 0n)
+      invalid("Payment amounts must be positive for a dispute fixture");
     const refundAmounts = refunds.map((refund) =>
-      amountValue(
-        refund.amount,
-        String(refund.currency ?? currency),
-        "refund.amount",
-      ),
+      refund.amount === null
+        ? null
+        : amountValue(
+            refund.amount,
+            String(refund.currency ?? currency),
+            "refund.amount",
+          ),
     );
     let refunded = 0n;
+    let settlementKnown = total !== null;
     let presentmentRefunded = 0n;
     for (let i = 0; i < refunds.length; i++) {
+      const refundAmount = refundAmounts[i];
       if (
-        refundAmounts[i].money.currency !== currency ||
-        refundAmounts[i].money.decimals !== total.money.decimals
+        (refunds[i].currency ?? refundAmount?.money.currency ?? currency) !==
+          currency ||
+        (refundAmount &&
+          total &&
+          refundAmount.money.decimals !== total.money.decimals)
       )
         invalid(
           "Seeded refunds must use the payment's currency and precision; FX is not simulated",
         );
       if (
-        presentment.money.currency !== currency &&
+        (!refundAmount || presentment.money.currency !== currency) &&
         refunds[i].original_amount === undefined
       )
         invalid(
-          "Cross-currency refunds need explicit original_amount in the presentment currency; FX is not simulated",
+          "Refunds with null or cross-currency amounts need explicit original_amount in the presentment currency; FX is not simulated",
         );
       const original = amountValue(
-        refunds[i].original_amount ?? refundAmounts[i].money,
+        refunds[i].original_amount ?? refundAmount!.money,
         presentment.money.currency,
         "refund.original_amount",
       );
       if (original.money.decimals !== presentment.money.decimals)
         invalid("refund.original_amount must use the presentment precision");
       if ((refunds[i].status ?? "succeeded") === "succeeded") {
-        refunded += refundAmounts[i].units;
+        if (refundAmount) refunded += refundAmount.units;
+        else settlementKnown = false;
         presentmentRefunded += original.units;
       }
     }
-    if (refunded > total.units)
+    if (total && refunded > total.units)
       invalid("Successful refunds exceed payment.total");
     if (presentmentRefunded > presentment.units)
       invalid(
@@ -362,7 +377,7 @@ export function seedScenarios(
       disputeCurrency === presentment.money.currency
         ? presentment.money
         : disputeCurrency === currency
-          ? total.money
+          ? total?.money
           : null;
     if (!disputeTotal && d.amount === undefined)
       invalid("A dispute in another currency requires an explicit amount");
@@ -405,8 +420,10 @@ export function seedScenarios(
       id: reserveId("payment", p.id, "pay_"),
       company_id: company.id,
       currency,
-      total: total.money,
-      refunded_amount: fromUnits(refunded, total.money),
+      total: total?.money ?? null,
+      refunded_amount: settlementKnown
+        ? fromUnits(refunded, total!.money)
+        : null,
       presentment_refunded_amount: fromUnits(
         presentmentRefunded,
         presentment.money,
@@ -415,9 +432,13 @@ export function seedScenarios(
         p.substatus ??
         ((p.status ?? "paid") !== "paid"
           ? "pending"
-          : refunded === total.units
+          : (
+                settlementKnown
+                  ? refunded === total!.units
+                  : presentmentRefunded === presentment.units
+              )
             ? "refunded"
-            : refunded > 0n
+            : refunded > 0n || presentmentRefunded > 0n
               ? "partially_refunded"
               : "succeeded"),
     });
@@ -451,7 +472,7 @@ export function seedScenarios(
         id: reserveId("refund", refund.id, "rf_"),
         payment_id: payment.id,
         currency,
-        amount: refundAmounts[i].money,
+        amount: refundAmounts[i]?.money ?? null,
       }),
     );
     check(

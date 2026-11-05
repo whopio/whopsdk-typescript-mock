@@ -358,3 +358,175 @@ test("custom Money and refund fixtures preserve precision and exclude pending/fa
     400,
   );
 });
+
+test("seed and simulation controls accept the public prevented dispute status", async () => {
+  const seeded = await control("seed", {
+    scenarios: [{ dispute: { status: "prevented" } }, {}],
+  });
+  assert.equal(seeded.status, 201, JSON.stringify(seeded.body));
+  const api = client(seeded.body.credentials.api_token);
+  const dispute = await api.disputes.retrieve({
+    id: seeded.body.scenarios[0].dispute_id,
+  });
+  assert.equal(dispute.status, "prevented");
+  assert.equal(dispute.evidence_editable, false);
+  assert.equal(dispute.acceptable, false);
+  const transitioned = await control(
+    `disputes/${seeded.body.scenarios[1].dispute_id}`,
+    { status: "prevented" },
+    "PATCH",
+  );
+  assert.equal(transitioned.status, 200);
+  assert.equal(transitioned.body.status, "prevented");
+  assert.equal(
+    (await api.disputes.list({ statuses: ["prevented"] })).data.length,
+    2,
+  );
+  const created = await control("scenarios", { status: "prevented" });
+  assert.equal(created.status, 201);
+  assert.equal(created.body.event.data.status, "prevented");
+});
+
+test("seeding preserves unknown settlement amounts and validates known charge refunds atomically", async () => {
+  const eur = (amount) => ({
+    amount,
+    currency: "eur",
+    decimals: 2,
+    display_decimals: 2,
+  });
+  const scenario = {
+    payment: { total: null, presentment_total: eur("9.99") },
+    refunds: [
+      { amount: null, original_amount: eur("1.00"), status: "succeeded" },
+    ],
+  };
+  const seeded = await control("seed", {
+    scenarios: [
+      scenario,
+      { ...scenario, payment: { ...scenario.payment, currency: "eur" } },
+      {
+        ...scenario,
+        payment: { ...scenario.payment, total: 9.99, refundable: true },
+      },
+    ],
+  });
+  assert.equal(seeded.status, 201, JSON.stringify(seeded.body));
+  const api = client(seeded.body.credentials.api_token);
+  const ids = seeded.body.scenarios[0];
+  const payment = await api.payments.retrieve({ id: ids.payment_id });
+  assert.equal(payment.total, null);
+  assert.equal(payment.refunded_amount, null);
+  assert.deepEqual(payment.presentment_total, eur("9.99"));
+  assert.deepEqual(payment.presentment_refunded_amount, eur("1.00"));
+  assert.equal(payment.substatus, "partially_refunded");
+  const refund = await api.refunds.retrieve({ id: ids.refund_ids[0] });
+  assert.equal(refund.amount, null);
+  assert.deepEqual(refund.original_amount, eur("1.00"));
+  assert.equal(
+    (await api.disputes.retrieve({ id: ids.dispute_id })).amount,
+    9.99,
+  );
+  for (const status of ["failed", "succeeded"]) {
+    const completed = await control(
+      `refunds/${ids.refund_ids[0]}`,
+      { status },
+      "PATCH",
+    );
+    assert.equal(completed.status, 200, JSON.stringify(completed.body));
+    const updated = await api.payments.retrieve({ id: ids.payment_id });
+    assert.equal(updated.refunded_amount, null);
+    assert.deepEqual(
+      updated.presentment_refunded_amount,
+      eur(status === "succeeded" ? "1.00" : "0.00"),
+    );
+  }
+  await assert.rejects(
+    api.payments.refund({ id: ids.payment_id }),
+    (error) => error.statusCode === 501,
+  );
+  for (const other of seeded.body.scenarios.slice(1)) {
+    const payment = await api.payments.retrieve({ id: other.payment_id });
+    assert.equal(payment.refunded_amount, null);
+    assert.deepEqual(payment.presentment_refunded_amount, eur("1.00"));
+    await assert.rejects(
+      api.payments.refund({ id: other.payment_id }),
+      (error) => error.statusCode === 501,
+    );
+  }
+  const before = (await control("status", undefined, "GET")).body.resources;
+  for (const bad of [
+    { ...scenario, refunds: [{ amount: null }] },
+    { ...scenario, refunds: [{ amount: null, original_amount: eur("10.00") }] },
+    { payment: { total: null } },
+  ]) {
+    assert.equal((await control("seed", { scenarios: [{}, bad] })).status, 400);
+    assert.deepEqual(
+      (await control("status", undefined, "GET")).body.resources,
+      before,
+    );
+  }
+});
+
+test("18-decimal Money fixtures retain exact totals and refund arithmetic", async () => {
+  const eth = (amount) => ({
+    amount,
+    currency: "eth",
+    decimals: 18,
+    display_decimals: 18,
+  });
+  const seeded = await control("seed", {
+    scenarios: [
+      {
+        payment: { total: eth("0.123456789012345678") },
+        refunds: [
+          { amount: eth("0.000000000000000001") },
+          { amount: eth("0.000000000000000002") },
+        ],
+      },
+    ],
+  });
+  assert.equal(seeded.status, 201, JSON.stringify(seeded.body));
+  const api = client(seeded.body.credentials.api_token);
+  const payment = await api.payments.retrieve({
+    id: seeded.body.scenarios[0].payment_id,
+  });
+  assert.deepEqual(payment.total, eth("0.123456789012345678"));
+  assert.deepEqual(payment.refunded_amount, eth("0.000000000000000003"));
+  assert.deepEqual(
+    payment.presentment_refunded_amount,
+    payment.refunded_amount,
+  );
+  assert.equal(payment.substatus, "partially_refunded");
+  assert.equal(
+    (
+      await control("seed", {
+        scenarios: [{ payment: { total: eth("0.0000000000000000001") } }],
+      })
+    ).status,
+    400,
+  );
+});
+
+test("seed precision limits reject excessive allocation atomically", async () => {
+  const before = (await control("status", undefined, "GET")).body.resources;
+  const excessive = {
+    amount: "1",
+    currency: "eth",
+    decimals: 1_000_000_000,
+    display_decimals: 18,
+  };
+  for (const scenario of [
+    { payment: { total: excessive } },
+    { payment: { presentment_total: excessive } },
+    { refunds: [{ amount: excessive }] },
+    { payment: { amount_after_fees: excessive } },
+  ]) {
+    const result = await control("seed", { scenarios: [{}, scenario] });
+    assert.equal(result.status, 400, JSON.stringify(result.body));
+    assert.match(result.body.error.message, /<= 100/);
+    assert.deepEqual(
+      (await control("status", undefined, "GET")).body.resources,
+      before,
+    );
+  }
+});

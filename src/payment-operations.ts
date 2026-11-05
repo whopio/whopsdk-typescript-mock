@@ -163,6 +163,7 @@ export class PaymentOperations {
       "retryable",
       "capture_expires_at",
       "auto_capture_at",
+      "recovery_url",
       "payment_status",
     ];
     if (Object.keys(input).some((key) => !allowed.includes(key)))
@@ -191,16 +192,27 @@ export class PaymentOperations {
     validateCurrentSchema("Payment", paymentResponse(next));
     validateCurrentSchema("PaymentStatus", this.status(next, {}));
     this.store.update("payment", id, next);
-    const event = (
-      {
-        paid: "succeeded",
-        void: "canceled",
-        authorized: "authorized",
-        pending: "pending",
-        uncollectible: "failed",
-      } as Record<string, string>
-    )[String(input.status)];
-    if (event && input.status !== payment.status)
+    const eventFor = (record: ResourceRecord) => {
+      if (record.status === "open") {
+        if (record.substatus === "failed") return "failed";
+        if (
+          object(record._payment_status).status === "requires_action" &&
+          record.recovery_url
+        )
+          return "requires_action";
+      }
+      return (
+        {
+          paid: "succeeded",
+          void: "canceled",
+          authorized: "authorized",
+          pending: "pending",
+          uncollectible: "failed",
+        } as Record<string, string>
+      )[String(record.status)];
+    };
+    const event = eventFor(next);
+    if (event && event !== eventFor(payment))
       this.session.webhookEmitter.emit(`payment.${event}`, { data: { id } });
     return paymentResponse(next);
   }
@@ -219,32 +231,42 @@ export class PaymentOperations {
       .filter((row) => row.status === "succeeded");
     let refunded = 0n,
       original = 0n;
+    let settlementKnown = dto.total !== null;
     for (const row of all) {
       const value = refundResponse(row, this.store);
-      refunded += units(object(value.amount));
+      if (value.amount === null) settlementKnown = false;
+      else refunded += units(object(value.amount));
       original += units(object(value.original_amount));
     }
     if (
-      refunded > units(object(dto.total)) ||
-      original > units(object(dto.presentment_total))
+      (dto.total !== null && refunded > units(object(dto.total))) ||
+      (dto.presentment_total !== null &&
+        original > units(object(dto.presentment_total)))
     )
       bad("Successful refunds exceed the payment's remaining balance");
+    const fullyRefunded = settlementKnown
+      ? refunded === units(object(dto.total))
+      : dto.presentment_total !== null &&
+        original === units(object(dto.presentment_total));
     this.store.update("refund", id, next);
     this.store.update("payment", String(payment.id), {
-      refunded_amount: fromUnits(refunded, object(dto.total)),
-      presentment_refunded_amount: fromUnits(
-        original,
-        object(dto.presentment_total),
-      ),
+      refunded_amount: settlementKnown
+        ? fromUnits(refunded, object(dto.total))
+        : null,
+      presentment_refunded_amount:
+        dto.presentment_total === null
+          ? null
+          : fromUnits(original, object(dto.presentment_total)),
       refundable:
-        payment.status === "paid" && refunded < units(object(dto.total)),
-      substatus:
-        refunded === units(object(dto.total))
-          ? "refunded"
-          : refunded > 0n
-            ? "partially_refunded"
-            : payment.substatus,
-      ...(refunded > 0n ? { refunded_at: next.updated_at } : {}),
+        payment.status === "paid" && settlementKnown && !fullyRefunded,
+      substatus: fullyRefunded
+        ? "refunded"
+        : refunded > 0n || original > 0n
+          ? "partially_refunded"
+          : payment.substatus,
+      ...(refunded > 0n || original > 0n
+        ? { refunded_at: next.updated_at }
+        : {}),
     });
     this.session.webhookEmitter.emit("refund.updated", { data: { id } });
     return refundResponse(next, this.store);
@@ -503,6 +525,21 @@ export class PaymentOperations {
 
   private refund(payment: ResourceRecord, body: ResourceRecord): void {
     const dto = paymentResponse(payment);
+    if (
+      dto.total === null ||
+      dto.presentment_total === null ||
+      this.store
+        .list("refund")
+        .some(
+          (row) =>
+            row.payment_id === payment.id &&
+            row.status === "succeeded" &&
+            row.amount === null,
+        )
+    )
+      unsupported(
+        "refund calculations with unknown settlement or charge amounts; seed known amounts to test refund writes",
+      );
     const total = object(dto.total),
       presentment = object(dto.presentment_total);
     const refunded =
