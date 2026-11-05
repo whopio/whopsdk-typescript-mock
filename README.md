@@ -2,6 +2,243 @@
 
 Stateful in-process mock for the Whop TypeScript SDK. Like `stripe-mock` but for Whop.
 
+## Current API testing — updated November 4, 2026
+
+This checkout starts from upstream `6d0057823fdd4f455fc97c734aee074205800568`
+(June 22, 2026). It preserves the original Node/npm/TypeScript setup, in-memory
+fixture store and three original test files. No database, Docker, remote devbox,
+queue service or hosted sandbox is required. The current-API adapter and optional
+local HTTP wrapper use that same store.
+
+### Test the dispute API with your own data
+
+```bash
+npm ci
+npm run serve:mock
+# In another terminal, edit the example or supply your own JSON file:
+npm run seed:mock -- examples/http/disputes.seed.json
+npm run smoke:disputes
+```
+
+Seeding returns your merchant's test API keys and linked dispute/payment/refund
+IDs. Use the returned key with `http://127.0.0.1:4100/api/v1`. You can list/read
+cases, edit and upload evidence, submit or accept disputes, and drive simulated
+outcomes and webhooks. [Start here](examples/http/README.md#seed-your-own-dispute-cases).
+`smoke:disputes` exercises the whole flow with fresh data without resetting other
+cases. The service remains local; each tester can run a copy of this repository.
+
+### Original setup and command
+
+```bash
+npm ci
+npm test
+```
+
+`npm test` is exactly the upstream command: build with `tsc`, then run
+`tests/payout-test.ts`, `tests/dispute-test.ts` and `tests/payments-test.ts` with
+`tsx`. It contains 43 examples. These are synthetic in-process tests; the
+repository does not establish how any particular developer ran tests elsewhere.
+The original scripts catch assertion failures without necessarily failing the
+process, so `test:baseline` invokes that same `npm test` and checks its output.
+
+### Additional compatibility checks
+
+```bash
+npm run test:all       # original command + compatibility/HTTP + independent Node clients
+npm run test:compat    # schema coverage for every scoped operation + behavior and SDK checks
+npm run test:http      # actual HTTP, multipart uploads, signed callbacks and processor controls
+npm run test:partners  # 48 checks from independently written Node partner clients
+npm run test:workflow  # consolidated-PDF integration example
+npm run audit:sdk      # validate runtime responses against the pinned SDK types
+npm run check:docs     # read current docs.whop.com and detect contract drift
+npm run serve:mock    # optional local API: http://127.0.0.1:4100/api/v1
+```
+
+The audit covers the 36 public operations indexed by docs.whop.com in the dispute,
+payment, refund, file and webhook areas. Tests execute every operation and check
+response shapes against 57 referenced schemas extracted only from those public
+pages. All eleven local lifecycle events have resource-data and signature checks.
+The nine indexed webhook pages omit envelope schemas; `check:docs` reports that
+verification gap rather than claiming full webhook payload parity.
+The SDK is pinned to 2.7.0. The default mock API date is `2026-10-28`.
+Any valid date (including release suffixes) is accepted and uses the closest
+implemented behavior at or before that date, clamped to the oldest/latest model.
+The effective date is returned in `x-whop-mock-api-version`. This permissive
+fallback is a mock convenience, not Whop's real version-negotiation behavior.
+
+The fixture engine now supports payment updates, refunds, capture/status/retry/void,
+receipt PDFs, and webhook registration, delivery logs and replay. Payment creation
+uses explicitly seeded request/result pairs; processor completion uses admin test
+controls. [See the complete scope, examples and limitations](examples/http/README.md#complete-current-api-scope).
+
+These checks establish public documentation/schema agreement and local fixture behavior.
+They do not certify a 1:1 production backend or a passing run of your application.
+The service reports `backend_parity: "unverified"` explicitly.
+
+### Disputes, payment/refund context, and evidence files
+
+This complete example uses the current SDK in memory. Run it from the repository
+root after `npm ci`; it does not require the HTTP server. The PDF is synthetic.
+
+```bash
+npm run build
+node --input-type=module <<'JS'
+import assert from 'node:assert/strict';
+import { WhopClient } from '@whop/sdk';
+import { unwrapWebhook } from '@whop/sdk/helpers';
+import WhopMock, { API_VERSION_DATE } from './dist/index.js';
+import { evidencePdf } from './examples/evidence-pdf.mjs';
+
+WhopMock.start();
+try {
+  const mockFetch = WhopMock.createFetch();
+  const client = new WhopClient({
+    token: 'test-only', fetch: mockFetch,
+    apiVersionDate: API_VERSION_DATE, maxRetries: 0,
+  });
+  const helper = WhopMock.createTestHelper();
+
+  // Seed linked fixtures. Dispute creation is a test helper, not a public API.
+  const { dispute, payment, company } = helper.createDisputeWithPayment({
+    payment: { total: 99.99, customer_email: 'buyer@example.test' },
+    dispute: { provider: 'stripe', reason: 'fraudulent' },
+  });
+  helper.createRefund({ payment_id: payment.id, amount: 20, status: 'succeeded' });
+
+  const page = await client.disputes.list({ account_id: company.id, first: 10 });
+  const current = await client.disputes.retrieve({ id: dispute.id });
+  const paid = await client.payments.retrieve({ id: current.payment.id });
+  const refunds = await client.refunds.list({ payment_id: paid.id });
+  assert.equal(page.data[0].id, dispute.id);
+  assert.equal(paid.total.amount, '99.99');
+  assert.equal(refunds.data[0].amount.amount, '20.00');
+
+  // Create a File, PUT bytes to its upload URL, then attach the ready file.
+  const bytes = evidencePdf();
+  const file = await client.files.create({ filename: 'delivery.pdf', byte_size: bytes.length });
+  const upload = await mockFetch(file.upload_url, {
+    method: 'PUT', headers: file.upload_headers, body: bytes,
+  });
+  assert.equal(upload.status, 200);
+  const ready = await client.files.retrieve({ id: file.id });
+  assert.equal(ready.upload_status, 'ready'); // Immediate for this in-memory adapter.
+  await client.disputes.update({ id: dispute.id, evidence: { notes: 'Synthetic delivery evidence' } });
+  await client.disputes.uploadEvidence({
+    id: dispute.id,
+    documents: [{ id: ready.id, document_type: 'digital_fulfillment' }],
+  });
+
+  // Submit starts a pending workflow; the test explicitly chooses its outcome.
+  const pending = await client.disputes.submit({ id: dispute.id });
+  assert.equal(pending.evidence_submitted_at, null);
+  WhopMock.completeDisputeSubmission(dispute.id, 'accepted'); // Or 'rejected'.
+  const submitted = await client.disputes.retrieve({ id: dispute.id });
+  assert.equal(submitted.status, 'under_review');
+  assert.equal(submitted.evidence_locked_reason, 'submitted');
+  await assert.rejects(
+    client.disputes.update({ id: dispute.id, evidence: { notes: 'Too late' } }),
+    error => error.statusCode === 400,
+  );
+
+  // Conceding an open dispute is a separate action from submitting evidence.
+  const other = helper.createDisputeWithPayment({ dispute: { provider: 'stripe' } });
+  assert.equal((await client.disputes.accept({ id: other.dispute.id })).status, 'lost');
+
+  // Sign an event and verify it with the SDK's actual webhook helper.
+  const event = WhopMock.emitWebhookEvent('dispute.updated', { data: { id: dispute.id } });
+  const secret = 'ws_readme_fixture_only';
+  const delivery = WhopMock.signWebhook(event, secret);
+  const verified = unwrapWebhook(delivery.body, { headers: delivery.headers, key: secret });
+  assert.equal(verified.data.id, dispute.id);
+  console.log('Dispute, context, file, submission, concession and webhook examples passed.');
+} finally {
+  WhopMock.stop();
+}
+JS
+```
+
+Use the same `mockFetch` for SDK calls and upload PUTs. HTTP clients must poll
+the File until `upload_status` is `ready` before attaching it. `uploadEvidence`
+replaces the entire document set; retain existing documents when needed. For a
+consolidated packet, the supported fixed slot is
+`evidence: { uncategorized_attachment: { id: ready.id } }` in `disputes.update()`.
+Payment/refund APIs in this adapter support list and retrieve; create those
+records with fixture helpers.
+
+### HTTP webhooks and simulated outcomes
+
+For a real HTTP client or webhook receiver, start these in separate terminals:
+
+```bash
+# Terminal 1: demo receiver (replace with your application's receiver when ready).
+npm run receive:webhooks
+# Terminal 2: API, configured to deliver signed events to that receiver.
+WHOP_MOCK_WEBHOOK_URL=http://127.0.0.1:4101/webhooks/whop npm run serve:mock
+```
+
+The following requests use the built-in primary merchant on a fresh server.
+Custom seeds return their own API tokens and IDs; substitute those when testing
+your data. These defaults are local fixture credentials.
+
+```bash
+# Emit a dispute.created event to the configured receiver.
+curl --fail-with-body http://127.0.0.1:4100/_test/events \
+  -H 'Authorization: Bearer local_mock_admin_test_only' \
+  -H 'Content-Type: application/json' \
+  --data '{"type":"dispute.created","resource_id":"dspt_mock_open","deliver":true}'
+
+# Submit through the API (your integration normally makes this request).
+curl --fail-with-body http://127.0.0.1:4100/api/v1/disputes/dspt_mock_open/submit \
+  -H 'Authorization: Bearer local_mock_api_test_only' \
+  -H 'Api-Version-Date: 2026-10-28' -H 'Content-Type: application/json' \
+  --data '{}'
+
+# Simulate processor acceptance; dispute.updated is scheduled after one minute.
+curl --fail-with-body http://127.0.0.1:4100/_test/submissions/dspt_mock_open \
+  -H 'Authorization: Bearer local_mock_admin_test_only' \
+  -H 'Content-Type: application/json' --data '{"outcome":"accepted"}'
+
+# Inspect the resulting under_review state.
+curl --fail-with-body http://127.0.0.1:4100/api/v1/disputes/dspt_mock_open \
+  -H 'Authorization: Bearer local_mock_api_test_only' \
+  -H 'Api-Version-Date: 2026-10-28'
+```
+
+`/_test/*` routes are simulator controls; only `/api/v1/*` routes model API calls.
+For a complete HTTP flow including evidence upload, run `npm run smoke:disputes`.
+The [HTTP guide](examples/http/README.md#scenarios-and-controls) includes event
+replay, one-shot failures, upload failures and won/lost outcomes. The default
+demo webhook signing secret is `ws_local_mock_webhook_test_only`.
+**Registered webhooks use their own `webhook_secret` from the creation response.**
+When using a registered webhook, omit `deliver` on test event/scenario controls:
+the matching subscription delivers automatically. `deliver: true` additionally
+sends a demo callback signed with the server-level secret. See the
+[signing-secret guide](examples/http/README.md#webhook-signing-secrets).
+
+To connect your existing service, use the [local HTTP walkthrough](examples/http/README.md).
+The [in-process example](examples/README.md) documents fixture setup. Both use
+synthetic records. They do not execute your code, the real permission-policy
+engine, PDF processing or payment processors. Unknown operations fail explicitly;
+there is no live API fallback. Health/status report backend parity as unverified.
+Independent backend captures can be compared if they become available; a separate
+backend environment is not part of this project's setup.
+
+The [isolated partner simulations](tests/partner/README.md) include three independent
+Node clients with 48 checks covering evidence, webhook reliability and fixture
+authoring. These exercise synthetic partner
+implementations; testing your application requires connecting its own client and handler.
+
+Saved run reports, agent scratch output, build output, environment files and
+user-specific data stay local and are ignored by Git. Use `.local/` for custom
+datasets and `test-results/` for reports. The vendored response schema remains
+versioned because both the seed validator and schema tests load it at runtime;
+GitHub marks that snapshot as generated to keep reviews focused on code.
+
+The upstream instructions below describe the legacy fixture surface. The public
+registry returned 404 for `whopsdk-mock` on the review date. Its illustrated `Whop`
+constructor and `install()` are not the current SDK interface; use this checkout
+and `WhopClient({ fetch: WhopMock.createFetch() })` for current SDK testing.
+
 ## Install
 
 ```bash

@@ -34,13 +34,16 @@ export class ErrorInjector {
   }
 
   raiseIfPrepared(route: RouteEntry): void {
-    const actionKey = this.actionKeyFor(route);
+    this.raiseForAction(this.actionKeyFor(route));
+  }
+
+  raiseForAction(actionKey: string): void {
     const injection = this.prepared.get(actionKey);
 
     if (injection) {
       this.prepared.delete(actionKey);
       const message = injection.message ?? `Injected error for ${actionKey}`;
-      throw new injection.errorClass(message);
+      throw Object.assign(new injection.errorClass(message), injection.attributes);
     }
   }
 

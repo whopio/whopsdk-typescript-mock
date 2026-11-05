@@ -11,6 +11,17 @@
  * `type` field Whop sends on the event envelope exactly.
  */
 export const WebhookEvents = {
+  DISPUTE_CREATED: 'dispute.created',
+  DISPUTE_UPDATED: 'dispute.updated',
+  PAYMENT_SUCCEEDED: 'payment.succeeded',
+  PAYMENT_FAILED: 'payment.failed',
+  PAYMENT_CREATED: 'payment.created',
+  PAYMENT_AUTHORIZED: 'payment.authorized',
+  PAYMENT_CANCELED: 'payment.canceled',
+  PAYMENT_PENDING: 'payment.pending',
+  PAYMENT_REQUIRES_ACTION: 'payment.requires_action',
+  REFUND_CREATED: 'refund.created',
+  REFUND_UPDATED: 'refund.updated',
   // Membership lifecycle
   MEMBERSHIP_WENT_VALID: 'membership.went_valid',
   MEMBERSHIP_WENT_INVALID: 'membership.went_invalid',

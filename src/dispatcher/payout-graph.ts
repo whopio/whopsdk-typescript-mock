@@ -255,7 +255,7 @@ export class PayoutGraph {
 
   /**
    * Ensures ledger account has proper graph relationships.
-   * LedgerAccount belongs to a resource_owner (Company/User) and has many payout_accounts.
+   * Each ledger-account fixture belongs to a company or user and links to payout accounts.
    */
   ensureLedgerAccountGraph(
     record: ResourceRecord,

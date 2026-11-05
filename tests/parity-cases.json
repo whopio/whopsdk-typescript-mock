@@ -1,0 +1,26 @@
+{
+  "api_version_date": "2026-10-28",
+  "scope": "Dispute intake, payment/refund context, evidence, uploads and webhook integration",
+  "required_cases": [
+    "dispute.retrieve",
+    "dispute.list_pagination_filters",
+    "payment.retrieve_money",
+    "refund.list_payment_account",
+    "evidence.patch_partial_and_allowlist",
+    "evidence.document_replacement",
+    "evidence.locked",
+    "evidence.expired",
+    "evidence.policy_fallback",
+    "files.upload_processing_ready_download",
+    "files.invalid_ownership_type_size",
+    "files.query_parameter_forms",
+    "submission.pending_and_repeat",
+    "submission.accepted",
+    "submission.rejected",
+    "webhook.signature_and_envelope",
+    "webhook.failure_replay_order",
+    "auth.missing_invalid",
+    "auth.read_only",
+    "auth.cross_account"
+  ]
+}

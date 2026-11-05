@@ -11,6 +11,7 @@ import { FallbackRegistry } from './fallback-registry.js';
 import { Dispatcher } from './dispatcher.js';
 import { MockRequester } from './mock-requester.js';
 import { WebhookEmitter } from './webhook-emitter.js';
+import { CurrentApi } from './current-api.js';
 import type { OpenAPISpec } from './types.js';
 
 /**
@@ -31,6 +32,7 @@ export class Session {
   readonly dispatcher: Dispatcher;
   readonly requester: MockRequester;
   readonly webhookEmitter: WebhookEmitter;
+  readonly currentApi: CurrentApi;
 
   private constructor(options: {
     configuration: Configuration;
@@ -60,6 +62,7 @@ export class Session {
     this.dispatcher = options.dispatcher;
     this.requester = options.requester;
     this.webhookEmitter = options.webhookEmitter;
+    this.currentApi = new CurrentApi(this);
   }
 
   static build(options: { specPath?: string; configuration: Configuration }): Session {

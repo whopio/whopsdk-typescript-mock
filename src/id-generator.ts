@@ -7,12 +7,14 @@ const DEFAULT_PREFIXES: Record<string, string> = {
   member: 'mb_',
   membership: 'mem_',
   payment: 'pay_',
+  dispute: 'dspt_',
+  file: 'file_',
   payment_method: 'pm_',
   setup_intent: 'setup_',
   plan: 'plan_',
   product: 'prod_',
   invoice: 'inv_',
-  refund: 'ref_',
+  refund: 'rf_',
   transfer: 'xfer_',
   withdrawal: 'wd_',
   topup: 'topup_',
@@ -41,7 +43,12 @@ export class IdGenerator {
 
   generate(resourceName: string): string {
     const prefix = this.prefixFor(resourceName);
-    const randomPart = this.randomAlphanumeric(12);
+    const length = ['company', 'user', 'payment', 'dispute', 'refund', 'file'].includes(
+      resourceName
+    )
+      ? Math.max(1, 18 - prefix.length)
+      : 12;
+    const randomPart = this.randomAlphanumeric(length);
     return `${prefix}${randomPart}`;
   }
 

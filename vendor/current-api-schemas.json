@@ -1,0 +1,2129 @@
+{
+  "api_version_date": "2026-11-04-1",
+  "paths": {
+    "/disputes": {
+      "get": {
+        "operationId": "listDisputes",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":20,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {"default":"created_at","enum":["created_at","amount","evidence_due_at"],"type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {"default":"desc","enum":["asc","desc"],"type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["needs_response","warning_needs_response","under_review","warning_under_review","won","lost","prevented","warning_closed"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {"in":"query","name":"currency","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"created_before","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"created_after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"query","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_subaccounts","required":false,"schema":{"type":"boolean"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/Dispute"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {}
+        }
+      }
+    },
+    "/disputes/summary": {
+      "get": {
+        "operationId": "retrieveDisputeSummary",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "groups",
+            "required": false,
+            "schema": {"items":{"enum":["status","currency"],"type":"string"},"type":"array"}
+          },
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["needs_response","warning_needs_response","under_review","warning_under_review","won","lost","prevented","warning_closed"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {"in":"query","name":"currency","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"created_before","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"created_after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"query","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_subaccounts","required":false,"schema":{"type":"boolean"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "groups": {
+                "properties": {
+                  "currency": {"additionalProperties":{"type":"integer"},"type":"object"},
+                  "status": {
+                    "properties": {
+                      "lost": {"type":"integer"},
+                      "needs_response": {"type":"integer"},
+                      "prevented": {"type":"integer"},
+                      "under_review": {"type":"integer"},
+                      "warning_closed": {"type":"integer"},
+                      "warning_needs_response": {"type":"integer"},
+                      "warning_under_review": {"type":"integer"},
+                      "won": {"type":"integer"}
+                    },
+                    "required": ["needs_response","warning_needs_response","under_review","warning_under_review","won","lost","prevented","warning_closed"],
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "total": {"type":"integer"}
+            },
+            "required": ["total","groups"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {}
+        }
+      }
+    },
+    "/disputes/{id}": {
+      "get": {
+        "operationId": "retrieveDispute",
+        "parameters": [{"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}}],
+        "responses": {"200":{"$ref":"#/components/schemas/Dispute"},"401":{},"404":{}}
+      },
+      "patch": {
+        "operationId": "updateDispute",
+        "parameters": [{"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}}],
+        "body": {
+          "properties": {
+            "evidence": {
+              "properties": {
+                "access_activity_log": {"type":["string","null"]},
+                "billing_address": {"type":["string","null"]},
+                "cancellation_policy_attachment": {
+                  "properties": {"direct_upload_id":{"type":"string"},"id":{"type":"string"}},
+                  "type": ["object","null"]
+                },
+                "cancellation_policy_disclosure": {"type":["string","null"]},
+                "customer_communication_attachment": {
+                  "properties": {"direct_upload_id":{"type":"string"},"id":{"type":"string"}},
+                  "type": ["object","null"]
+                },
+                "customer_email_address": {"type":["string","null"]},
+                "customer_name": {"type":["string","null"]},
+                "documents": {
+                  "items": {
+                    "properties": {
+                      "direct_upload_id": {"type":"string"},
+                      "document_type": {
+                        "enum": ["return_policy","shipping_policy","cancellation_policy","terms_of_service","physical_fulfillment","customer_order_history","product_image","prior_transactions","customer_session","digital_fulfillment","subscription","customer_communication"],
+                        "type": "string"
+                      },
+                      "file": {"format":"binary","type":"string"},
+                      "id": {"type":"string"}
+                    },
+                    "required": ["document_type"],
+                    "type": "object"
+                  },
+                  "maxItems": 10,
+                  "type": "array"
+                },
+                "notes": {"type":["string","null"]},
+                "product_description": {"type":["string","null"]},
+                "refund_policy_attachment": {
+                  "properties": {"direct_upload_id":{"type":"string"},"id":{"type":"string"}},
+                  "type": ["object","null"]
+                },
+                "refund_policy_disclosure": {"type":["string","null"]},
+                "refund_refusal_explanation": {"type":["string","null"]},
+                "service_date": {"type":["string","null"]},
+                "uncategorized_attachment": {
+                  "properties": {"direct_upload_id":{"type":"string"},"id":{"type":"string"}},
+                  "type": ["object","null"]
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
+        "request_content_types": ["application/json","multipart/form-data"],
+        "body_required": false,
+        "responses": {"200":{"$ref":"#/components/schemas/Dispute"},"400":{},"401":{},"404":{}}
+      }
+    },
+    "/disputes/{id}/accept": {
+      "post": {
+        "operationId": "acceptDispute",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/Dispute"},"400":{},"401":{},"403":{},"404":{},"409":{}}
+      }
+    },
+    "/disputes/{id}/submit": {
+      "post": {
+        "operationId": "submitDispute",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/Dispute"},"400":{},"401":{},"404":{},"409":{}}
+      }
+    },
+    "/disputes/{id}/upload_evidence": {
+      "post": {
+        "operationId": "uploadDisputeEvidence",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "documents": {
+              "items": {
+                "properties": {
+                  "direct_upload_id": {"type":"string"},
+                  "document_type": {
+                    "enum": ["return_policy","shipping_policy","cancellation_policy","terms_of_service","physical_fulfillment","customer_order_history","product_image","prior_transactions","customer_session","digital_fulfillment","subscription","customer_communication"],
+                    "type": "string"
+                  },
+                  "file": {"format":"binary","type":"string"},
+                  "id": {"type":"string"}
+                },
+                "required": ["document_type"],
+                "type": "object"
+              },
+              "maxItems": 10,
+              "type": "array"
+            }
+          },
+          "required": ["documents"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json","multipart/form-data"],
+        "body_required": false,
+        "responses": {"200":{"$ref":"#/components/schemas/Dispute"},"400":{},"401":{},"404":{},"409":{}}
+      }
+    },
+    "/files": {
+      "get": {
+        "operationId": "listFiles",
+        "parameters": [
+          {
+            "explode": true,
+            "in": "query",
+            "name": "file_ids",
+            "required": true,
+            "schema": {"items":{"type":"string"},"type":"array"},
+            "style": "form"
+          },
+          {"in":"query","name":"order","required":false,"schema":{"enum":["created_at"],"type":"string"}},
+          {"in":"query","name":"direction","required":false,"schema":{"enum":["asc","desc"],"type":"string"}},
+          {"in":"query","name":"first","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/File"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {}
+        }
+      },
+      "post": {
+        "operationId": "createFile",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "byte_size": {"type":"integer"},
+            "filename": {"type":"string"},
+            "multipart": {"type":"boolean"},
+            "visibility": {"enum":["public","private"],"type":"string"}
+          },
+          "required": ["filename"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": false,
+        "responses": {"201":{"$ref":"#/components/schemas/File"},"400":{},"401":{},"409":{}}
+      }
+    },
+    "/files/{id}": {
+      "get": {
+        "operationId": "retrieveFile",
+        "parameters": [],
+        "responses": {"200":{"$ref":"#/components/schemas/File"},"401":{},"404":{}}
+      }
+    },
+    "/files/{id}/complete": {
+      "post": {
+        "operationId": "completeFile",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "multipart_parts": {
+              "items": {
+                "properties": {"etag":{"type":"string"},"part_number":{"type":"integer"}},
+                "required": ["part_number","etag"],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "multipart_upload_id": {"type":"string"}
+          },
+          "required": ["multipart_upload_id","multipart_parts"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": false,
+        "responses": {"200":{"$ref":"#/components/schemas/File"},"400":{},"401":{},"404":{},"409":{}}
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "listPayments",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {"default":"account_sales","enum":["account_sales","user_sales"],"type":"string"}
+          },
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {"enum":["open","authorized","paid","pending","uncollectible","unresolved","void"],"type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "tracking_status",
+            "required": false,
+            "schema": {
+              "enum": ["unknown","pre_transit","in_transit","out_for_delivery","delivered","available_for_pickup","return_to_sender","failure","cancelled","error","needs_tracking","missing_tracking"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "billing_reason",
+            "required": false,
+            "schema": {
+              "enum": ["subscription_create","subscription_cycle","subscription_update","one_time","manual","subscription"],
+              "type": "string"
+            }
+          },
+          {"in":"query","name":"currency","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"user_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"query","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_subaccounts","required":false,"schema":{"type":"boolean"}},
+          {"in":"query","name":"member_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"membership_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"product_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"variant_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "statuses",
+            "required": false,
+            "schema": {
+              "items": {"enum":["open","authorized","paid","pending","uncollectible","unresolved","void"],"type":"string"},
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "substatuses",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["succeeded","requires_capture","pending","failed","blocked","past_due","canceled","price_too_low","uncollectible","refunded","auto_refunded","partially_refunded","dispute_warning","dispute_needs_response","dispute_warning_needs_response","resolution_needs_response","dispute_under_review","dispute_warning_under_review","resolution_under_review","dispute_won","dispute_warning_closed","resolution_won","dispute_lost","dispute_closed","resolution_lost","drafted","incomplete","unresolved"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "billing_reasons",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["subscription_create","subscription_cycle","subscription_update","one_time","manual","subscription"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currencies",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {"in":"query","name":"min_amount","required":false,"schema":{"minimum":0,"type":"number"}},
+          {"in":"query","name":"max_amount","required":false,"schema":{"minimum":0,"type":"number"}},
+          {
+            "in": "query",
+            "name": "variant_ids",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {
+            "in": "query",
+            "name": "product_ids",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {
+            "in": "query",
+            "name": "payment_methods",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["mastercard","visa","amex","discover","unionpay","jcb","diners","link","troy","visadankort","visabancontact","china_union_pay","rupay","jcbrupay","elo","maestro","tarjeta_naranja","cirrus","nspk_mir","verve","ebt","private_label","local_brand","uatp","wexcard","uzcard","meeza","hrg_store_card","girocard","fuel_card","dankort","carnet","atm_card","china_union_payuzcard","codensa","cabal","hipercard","jcblankapay","cmi","aura","accel","culiance","nyce","pulse","star","eftpos","alelo","edenred","sodexo","unknown","acss_debit","addi","affirm","afterpay_clearpay","alipay","alipayhk","alma","amazon_pay","apple","apple_pay","au_bank_transfer","au_becs_debit","bacs_debit","bancolombia","bancontact","bank_wire","billie","blik","boleto","bre_b","ca_bank_transfer","capchase_pay","card","card_present","card_installments_three","card_installments_six","card_installments_twelve","cashapp","claritypay","coinbase","crypto","custom","customer_balance","demo_pay","duitnow_qr","efecty","eps","eu_bank_transfer","fpx","flex_pay","gb_bank_transfer","gcash","giropay","google_pay","gopay","grabpay","id_bank_transfer","ideal","interac","international_bank_wire","kakao_pay","klarna","klarna_pay_now","konbini","kr_card","kr_market","kriya","kueski","mb_way","m_pesa","mercado_pago","mercado_pago_ar","mercado_pago_mx","mobilepay","modo","mondu","multibanco","naver_pay","nequi","netbanking","ng_bank","ng_bank_transfer","ng_card","ng_market","ng_ussd","ng_wallet","nupay","nz_bank_account","oney","oney_3x","oney_4x","opay","oxxo","p24","pago_efectivo","pse","pay_by_bank","payco","paynow","paypal","paypal_express","paypay","payto","payto_email","payto_phone","payto_bank_account","pix","platform_balance","promptpay","qris","rapipago","rechnung","revolut_pay","samsung_pay","satispay","scalapay","sencillito","sepa_debit","sequra","servipag","sezzle","shop_pay","shopeepay","sofort","south_korea_market","spei","splitit","sunbit","swish","tabby","tamara","touch_n_go","twint","upi","us_bank_account","us_bank_transfer","venmo","vipps","webpay","wechat_pay","whop_pay","yape","zip","coinflow","tap_to_pay"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tracking_states",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["unknown","pre_transit","in_transit","out_for_delivery","delivered","available_for_pickup","return_to_sender","failure","cancelled","error","needs_tracking","missing_tracking"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "refunded_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "refunded_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_alerted_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_alerted_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_created_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_created_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {"enum":["created_at","paid_at","amount"],"type":"string"}
+          },
+          {"in":"query","name":"direction","required":false,"schema":{"enum":["asc","desc"],"type":"string"}},
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":20,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_total_count","required":false,"schema":{"type":"boolean"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/Payment"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]},
+                  "total_count": {"type":["integer","null"]},
+                  "total_count_capped": {"type":"boolean"}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page","total_count","total_count_capped"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {"$ref":"#/components/schemas/V1ErrorResponse"},
+          "401": {},
+          "403": {}
+        }
+      },
+      "post": {
+        "operationId": "createPayment",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "allOf": [
+            {"$ref":"#/components/schemas/PaymentInput"},
+            {
+              "properties": {
+                "affiliate_code": {"type":["string","null"]},
+                "auto_capture_after_minutes": {"maximum":5760,"minimum":5,"type":["integer","null"]},
+                "billing_address": {
+                  "properties": {
+                    "city": {"type":["string","null"]},
+                    "country": {"type":["string","null"]},
+                    "line1": {"type":["string","null"]},
+                    "line2": {"type":["string","null"]},
+                    "name": {"type":["string","null"]},
+                    "postal_code": {"type":["string","null"]},
+                    "state": {"type":["string","null"]}
+                  },
+                  "type": ["object","null"]
+                },
+                "capture": {"type":["boolean","null"]},
+                "confirmation_token": {"type":["string","null"]},
+                "email": {"type":["string","null"]},
+                "ip_address": {"type":["string","null"]},
+                "line_items": {
+                  "items": {
+                    "oneOf": [{"required":["variant_id"]},{"required":["variant"]}],
+                    "properties": {
+                      "quantity": {"maximum":999999,"minimum":1,"type":["integer","null"]},
+                      "variant": {
+                        "properties": {
+                          "allow_multiple_quantity": {"type":["boolean","null"]},
+                          "application_fee_amount": {"type":["number","null"]},
+                          "billing_period": {"type":["integer","null"]},
+                          "billing_type": {"enum":[null,"renewal","one_time"],"type":["string","null"]},
+                          "currency": {
+                            "enum": ["usd","sgd","inr","aud","brl","cad","dkk","eur","nok","gbp","sek","chf","hkd","huf","jpy","mxn","myr","pln","czk","nzd","aed","eth","ape","cop","ron","thb","bgn","idr","dop","php","try","krw","twd","vnd","pkr","clp","uyu","ars","zar","dzd","tnd","mad","kes","kwd","jod","all","xcd","amd","bsd","bhd","bob","bam","khr","crc","xof","egp","etb","gmd","ghs","gtq","gyd","ils","jmd","mop","mga","mur","mdl","mnt","nad","ngn","mkd","omr","pyg","pen","qar","rwf","sar","rsd","lkr","tzs","ttd","uzs","rub","btc","cny","usdt","kzt","awg","whop_usd","xau"],
+                            "type": "string"
+                          },
+                          "expiration_days": {"type":["integer","null"]},
+                          "force_create_new_plan": {"type":["boolean","null"]},
+                          "initial_price": {"type":["number","null"]},
+                          "internal_notes": {"type":["string","null"]},
+                          "override_tax_type": {"enum":[null,"exclusive","inclusive","unspecified"],"type":["string","null"]},
+                          "product": {
+                            "properties": {
+                              "collect_shipping_address": {"type":["boolean","null"]},
+                              "custom_statement_descriptor": {"type":["string","null"]},
+                              "external_identifier": {"pattern":"\\S","type":"string"},
+                              "global_affiliate_percentage": {"type":["number","null"]},
+                              "global_affiliate_status": {"enum":[null,"enabled","disabled"],"type":["string","null"]},
+                              "headline": {"type":["string","null"]},
+                              "product_tax_code_id": {"type":["string","null"]},
+                              "redirect_purchase_url": {"type":["string","null"]},
+                              "route": {"type":["string","null"]},
+                              "title": {"pattern":"\\S","type":"string"},
+                              "visibility": {"default":"hidden","enum":["visible","hidden","archived","quick_link"],"type":"string"}
+                            },
+                            "required": ["external_identifier","title"],
+                            "type": ["object","null"]
+                          },
+                          "product_id": {"type":["string","null"]},
+                          "renewal_price": {"type":["number","null"]},
+                          "title": {"type":["string","null"]},
+                          "trial_period_days": {"type":["integer","null"]},
+                          "visibility": {"enum":[null,"visible","hidden","archived","quick_link"],"type":["string","null"]}
+                        },
+                        "required": ["currency"],
+                        "type": "object"
+                      },
+                      "variant_id": {"type":"string"}
+                    },
+                    "type": "object"
+                  },
+                  "maxItems": 50,
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "member_id": {"type":["string","null"]},
+                "metadata": {"additionalProperties":{"type":"string"},"type":["object","null"]},
+                "off_session": {"type":["boolean","null"]},
+                "payment_method": {
+                  "properties": {
+                    "card_present": {
+                      "properties": {"platform":{"enum":["ios","android"],"type":"string"}},
+                      "required": ["platform"],
+                      "type": "object"
+                    },
+                    "paypal": {"properties":{"request_shipping":{"type":"boolean"}},"type":"object"},
+                    "type": {"enum":["card_present","paypal"],"type":"string"}
+                  },
+                  "required": ["type"],
+                  "type": ["object","null"]
+                },
+                "payment_method_id": {"type":["string","null"]},
+                "quote_id": {"type":["string","null"]},
+                "return_url": {"type":["string","null"]},
+                "setup_future_usage": {"enum":["off_session",null],"type":["string","null"]},
+                "shipping_address": {
+                  "properties": {
+                    "city": {"type":["string","null"]},
+                    "country": {"type":["string","null"]},
+                    "line1": {"type":["string","null"]},
+                    "line2": {"type":["string","null"]},
+                    "name": {"type":["string","null"]},
+                    "postal_code": {"type":["string","null"]},
+                    "state": {"type":["string","null"]}
+                  },
+                  "type": ["object","null"]
+                },
+                "statement_descriptor": {"type":["string","null"]}
+              },
+              "required": [],
+              "type": "object"
+            }
+          ]
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {
+          "201": {"$ref":"#/components/schemas/Payment"},
+          "400": {"$ref":"#/components/schemas/V1ErrorResponse"},
+          "401": {},
+          "403": {},
+          "404": {},
+          "409": {}
+        }
+      }
+    },
+    "/payments/summary": {
+      "get": {
+        "operationId": "retrievePaymentSummary",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "groups",
+            "required": false,
+            "schema": {"items":{"enum":["substatus","currency"],"type":"string"},"type":"array"}
+          },
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "statuses",
+            "required": false,
+            "schema": {
+              "items": {"enum":["open","authorized","paid","pending","uncollectible","unresolved","void"],"type":"string"},
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "substatuses",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["succeeded","requires_capture","pending","failed","blocked","past_due","canceled","price_too_low","uncollectible","refunded","auto_refunded","partially_refunded","dispute_warning","dispute_needs_response","dispute_warning_needs_response","resolution_needs_response","dispute_under_review","dispute_warning_under_review","resolution_under_review","dispute_won","dispute_warning_closed","resolution_won","dispute_lost","dispute_closed","resolution_lost","drafted","incomplete","unresolved"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "billing_reasons",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["subscription_create","subscription_cycle","subscription_update","one_time","manual","subscription"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "currencies",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {"in":"query","name":"min_amount","required":false,"schema":{"minimum":0,"type":"number"}},
+          {"in":"query","name":"max_amount","required":false,"schema":{"minimum":0,"type":"number"}},
+          {
+            "in": "query",
+            "name": "variant_ids",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {
+            "in": "query",
+            "name": "product_ids",
+            "required": false,
+            "schema": {"items":{"type":"string"},"type":"array"}
+          },
+          {
+            "in": "query",
+            "name": "payment_methods",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["mastercard","visa","amex","discover","unionpay","jcb","diners","link","troy","visadankort","visabancontact","china_union_pay","rupay","jcbrupay","elo","maestro","tarjeta_naranja","cirrus","nspk_mir","verve","ebt","private_label","local_brand","uatp","wexcard","uzcard","meeza","hrg_store_card","girocard","fuel_card","dankort","carnet","atm_card","china_union_payuzcard","codensa","cabal","hipercard","jcblankapay","cmi","aura","accel","culiance","nyce","pulse","star","eftpos","alelo","edenred","sodexo","unknown","acss_debit","addi","affirm","afterpay_clearpay","alipay","alipayhk","alma","amazon_pay","apple","apple_pay","au_bank_transfer","au_becs_debit","bacs_debit","bancolombia","bancontact","bank_wire","billie","blik","boleto","bre_b","ca_bank_transfer","capchase_pay","card","card_present","card_installments_three","card_installments_six","card_installments_twelve","cashapp","claritypay","coinbase","crypto","custom","customer_balance","demo_pay","duitnow_qr","efecty","eps","eu_bank_transfer","fpx","flex_pay","gb_bank_transfer","gcash","giropay","google_pay","gopay","grabpay","id_bank_transfer","ideal","interac","international_bank_wire","kakao_pay","klarna","klarna_pay_now","konbini","kr_card","kr_market","kriya","kueski","mb_way","m_pesa","mercado_pago","mercado_pago_ar","mercado_pago_mx","mobilepay","modo","mondu","multibanco","naver_pay","nequi","netbanking","ng_bank","ng_bank_transfer","ng_card","ng_market","ng_ussd","ng_wallet","nupay","nz_bank_account","oney","oney_3x","oney_4x","opay","oxxo","p24","pago_efectivo","pse","pay_by_bank","payco","paynow","paypal","paypal_express","paypay","payto","payto_email","payto_phone","payto_bank_account","pix","platform_balance","promptpay","qris","rapipago","rechnung","revolut_pay","samsung_pay","satispay","scalapay","sencillito","sepa_debit","sequra","servipag","sezzle","shop_pay","shopeepay","sofort","south_korea_market","spei","splitit","sunbit","swish","tabby","tamara","touch_n_go","twint","upi","us_bank_account","us_bank_transfer","venmo","vipps","webpay","wechat_pay","whop_pay","yape","zip","coinflow","tap_to_pay"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tracking_states",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["unknown","pre_transit","in_transit","out_for_delivery","delivered","available_for_pickup","return_to_sender","failure","cancelled","error","needs_tracking","missing_tracking"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "refunded_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "refunded_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_alerted_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_alerted_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_created_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "dispute_created_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {"in":"query","name":"query","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_subaccounts","required":false,"schema":{"type":"boolean"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "groups": {
+                "properties": {
+                  "currency": {"additionalProperties":{"type":"integer"},"type":"object"},
+                  "substatus": {
+                    "properties": {
+                      "auto_refunded": {"type":"integer"},
+                      "blocked": {"type":"integer"},
+                      "canceled": {"type":"integer"},
+                      "dispute_closed": {"type":"integer"},
+                      "dispute_lost": {"type":"integer"},
+                      "dispute_needs_response": {"type":"integer"},
+                      "dispute_under_review": {"type":"integer"},
+                      "dispute_warning": {"type":"integer"},
+                      "dispute_warning_closed": {"type":"integer"},
+                      "dispute_warning_needs_response": {"type":"integer"},
+                      "dispute_warning_under_review": {"type":"integer"},
+                      "dispute_won": {"type":"integer"},
+                      "drafted": {"type":"integer"},
+                      "failed": {"type":"integer"},
+                      "incomplete": {"type":"integer"},
+                      "partially_refunded": {"type":"integer"},
+                      "past_due": {"type":"integer"},
+                      "pending": {"type":"integer"},
+                      "price_too_low": {"type":"integer"},
+                      "refunded": {"type":"integer"},
+                      "requires_capture": {"type":"integer"},
+                      "resolution_lost": {"type":"integer"},
+                      "resolution_needs_response": {"type":"integer"},
+                      "resolution_under_review": {"type":"integer"},
+                      "resolution_won": {"type":"integer"},
+                      "succeeded": {"type":"integer"},
+                      "uncollectible": {"type":"integer"},
+                      "unresolved": {"type":"integer"}
+                    },
+                    "required": ["succeeded","requires_capture","pending","failed","blocked","past_due","canceled","price_too_low","uncollectible","refunded","auto_refunded","partially_refunded","dispute_warning","dispute_needs_response","dispute_warning_needs_response","resolution_needs_response","dispute_under_review","dispute_warning_under_review","resolution_under_review","dispute_won","dispute_warning_closed","resolution_won","dispute_lost","dispute_closed","resolution_lost","drafted","incomplete","unresolved"],
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "total": {"type":"integer"}
+            },
+            "required": ["total","groups"],
+            "type": "object"
+          }
+        }
+      }
+    },
+    "/payments/{id}": {
+      "get": {
+        "operationId": "retrievePayment",
+        "parameters": [],
+        "responses": {"200":{"$ref":"#/components/schemas/Payment"},"401":{},"403":{},"404":{}}
+      },
+      "patch": {
+        "operationId": "updatePayment",
+        "parameters": [],
+        "body": {
+          "properties": {
+            "return_url": {"type":"string"},
+            "shipping_address": {
+              "properties": {
+                "city": {"type":["string","null"]},
+                "country": {"type":["string","null"]},
+                "line1": {"type":["string","null"]},
+                "line2": {"type":["string","null"]},
+                "name": {"type":["string","null"]},
+                "postal_code": {"type":["string","null"]},
+                "state": {"type":["string","null"]}
+              },
+              "type": ["object","null"]
+            }
+          },
+          "required": [],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {
+          "200": {"$ref":"#/components/schemas/Payment"},
+          "400": {"$ref":"#/components/schemas/V1ErrorResponse"},
+          "401": {},
+          "403": {},
+          "404": {}
+        }
+      }
+    },
+    "/payments/{id}/capture": {
+      "post": {
+        "operationId": "capturePayment",
+        "parameters": [
+          {"in":"path","name":"id","required":true,"schema":{"type":"string"}},
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/PaymentStatus"},"401":{},"403":{},"404":{},"409":{}}
+      }
+    },
+    "/payments/{id}/fees": {
+      "get": {
+        "operationId": "listPaymentFees",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/PaymentFee"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "401": {},
+          "404": {}
+        }
+      }
+    },
+    "/payments/{id}/generate_pdf": {
+      "post": {
+        "operationId": "generatePaymentPdf",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/PaymentPdf"},"401":{},"403":{},"404":{},"409":{}}
+      }
+    },
+    "/payments/{id}/refund": {
+      "post": {
+        "operationId": "refundPayment",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "metadata": {"additionalProperties":{"type":"string"},"type":["object","null"]},
+            "partial_amount": {"type":["number","null"]}
+          },
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": false,
+        "responses": {
+          "200": {"$ref":"#/components/schemas/Payment"},
+          "400": {"$ref":"#/components/schemas/V1ErrorResponse"},
+          "401": {},
+          "403": {},
+          "404": {},
+          "409": {}
+        }
+      }
+    },
+    "/payments/{id}/retry": {
+      "post": {
+        "operationId": "retryPayment",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/Payment"},"401":{},"404":{},"409":{}}
+      }
+    },
+    "/payments/{id}/void": {
+      "post": {
+        "operationId": "voidPayment",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/Payment"},"401":{},"404":{},"409":{}}
+      }
+    },
+    "/payments/{payment_id}/resume": {
+      "post": {
+        "operationId": "resumePayment",
+        "parameters": [
+          {"in":"path","name":"payment_id","required":true,"schema":{"type":"string"}},
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {"properties":{"client_secret":{"type":"string"},"return_url":{"type":"string"}},"type":"object"},
+        "request_content_types": ["application/json"],
+        "body_required": false,
+        "responses": {"200":{"$ref":"#/components/schemas/PaymentStatus"},"400":{},"401":{},"403":{},"404":{},"409":{}}
+      }
+    },
+    "/payments/{payment_id}/return_url": {
+      "patch": {
+        "operationId": "updateReturnUrlPayment",
+        "parameters": [{"in":"path","name":"payment_id","required":true,"schema":{"type":"string"}}],
+        "body": {
+          "properties": {"client_secret":{"type":"string"},"return_url":{"type":"string"}},
+          "required": ["return_url"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {"200":{"$ref":"#/components/schemas/PaymentStatus"},"400":{},"401":{}}
+      }
+    },
+    "/payments/{payment_id}/status": {
+      "get": {
+        "operationId": "retrieveStatusPayment",
+        "parameters": [
+          {"in":"path","name":"payment_id","required":true,"schema":{"type":"string"}},
+          {"in":"query","name":"client_secret","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/PaymentStatus"},"401":{},"403":{},"404":{}}
+      }
+    },
+    "/refunds": {
+      "get": {
+        "operationId": "listRefunds",
+        "parameters": [
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"payment_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"user_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "created_before",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "created_after",
+            "required": false,
+            "schema": {"format":"date-time","type":"string"}
+          },
+          {"in":"query","name":"order","required":false,"schema":{"enum":["created_at"],"type":"string"}},
+          {"in":"query","name":"direction","required":false,"schema":{"enum":["asc","desc"],"type":"string"}},
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":20,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/Refund"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {"$ref":"#/components/schemas/V1ErrorResponse"},
+          "401": {},
+          "404": {}
+        }
+      }
+    },
+    "/refunds/{id}": {
+      "get": {
+        "operationId": "retrieveRefund",
+        "parameters": [],
+        "responses": {"200":{"$ref":"#/components/schemas/Refund"},"401":{},"403":{},"404":{}}
+      }
+    },
+    "/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "parameters": [
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"app_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"include_app_webhooks","required":false,"schema":{"type":"boolean"}},
+          {"in":"query","name":"has_failures","required":false,"schema":{"type":"boolean"}},
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":20,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/WebhookListItem"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {},
+          "404": {}
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "api_version_date": {"type":["string","null"]},
+            "child_resource_events": {"type":"boolean"},
+            "enabled": {"type":"boolean"},
+            "events": {
+              "items": {
+                "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "resource_id": {"type":["string","null"]},
+            "title": {"maxLength":255,"type":["string","null"]},
+            "url": {"type":"string"}
+          },
+          "required": ["url"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {"200":{"$ref":"#/components/schemas/Webhook"},"400":{},"401":{},"403":{},"404":{},"409":{}}
+      }
+    },
+    "/webhooks/{id}": {
+      "get": {
+        "operationId": "retrieveWebhook",
+        "parameters": [],
+        "responses": {"200":{"$ref":"#/components/schemas/Webhook"},"401":{},"403":{},"404":{}}
+      },
+      "delete": {
+        "operationId": "deleteWebhook",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "properties": {"deleted":{"type":"boolean"},"id":{"type":"string"}},
+            "required": ["deleted","id"],
+            "type": "object"
+          },
+          "401": {},
+          "403": {},
+          "404": {}
+        }
+      },
+      "patch": {
+        "operationId": "updateWebhook",
+        "parameters": [],
+        "body": {
+          "properties": {
+            "api_version_date": {"type":["string","null"]},
+            "child_resource_events": {"type":"boolean"},
+            "enabled": {"type":"boolean"},
+            "events": {
+              "items": {
+                "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed"],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": {"maxLength":255,"type":["string","null"]},
+            "url": {"type":"string"}
+          },
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {"200":{"$ref":"#/components/schemas/Webhook"},"400":{},"401":{},"403":{},"404":{}}
+      }
+    },
+    "/webhooks/{id}/deliveries": {
+      "get": {
+        "operationId": "listWebhookDeliveries",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":50,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"sent_after","required":false,"schema":{"format":"date-time","type":"string"}},
+          {"in":"query","name":"sent_before","required":false,"schema":{"format":"date-time","type":"string"}},
+          {
+            "in": "query",
+            "name": "events",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","withdrawal.created","withdrawal.updated","withdrawal.reversed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed","membership.went_valid","membership.went_invalid","membership.metadata_updated","resolution.created","resolution.updated","resolution.decided","payment.affiliate_reward_created","membership.experience_claimed","app_membership.went_valid","app_membership.went_invalid","app_payment.created","app_payment.succeeded","app_payment.failed","app_payment.pending","app_payment.requires_action","app_membership.cancel_at_period_end_changed"],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {"enum":["success","error"],"type":"string"}
+          },
+          {"in":"query","name":"resource_id","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/WebhookDelivery"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {},
+          "404": {}
+        }
+      }
+    },
+    "/webhooks/{id}/deliveries/{delivery_id}/replay": {
+      "post": {
+        "operationId": "replayWebhookDelivery",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {"properties":{"regenerate_id":{"type":"boolean"}},"type":"object"},
+        "request_content_types": ["application/json"],
+        "body_required": false,
+        "responses": {
+          "200": {
+            "properties": {"body":{"type":"string"},"status":{"type":"integer"},"success":{"type":"boolean"}},
+            "required": ["status","body","success"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {},
+          "404": {},
+          "409": {}
+        }
+      }
+    },
+    "/webhooks/{id}/replay": {
+      "post": {
+        "operationId": "replayWebhook",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {
+          "properties": {
+            "events": {"items":{"type":"string"},"type":"array"},
+            "failed_only": {"type":"boolean"},
+            "regenerate_ids": {"type":"boolean"},
+            "sent_after": {"type":"string"},
+            "sent_before": {"type":"string"}
+          },
+          "required": ["sent_after"],
+          "type": "object"
+        },
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {
+          "200": {"properties":{"queued":{"type":"boolean"}},"required":["queued"],"type":"object"},
+          "400": {},
+          "401": {},
+          "403": {},
+          "404": {},
+          "409": {}
+        }
+      }
+    },
+    "/webhooks/{id}/test": {
+      "post": {
+        "operationId": "testWebhook",
+        "parameters": [
+          {"in":"header","name":"Idempotency-Key","required":false,"schema":{"maxLength":255,"type":"string"}}
+        ],
+        "body": {"properties":{"event":{"type":"string"}},"required":["event"],"type":"object"},
+        "request_content_types": ["application/json"],
+        "body_required": true,
+        "responses": {
+          "200": {
+            "properties": {"body":{},"status":{"type":"integer"},"success":{"type":"boolean"}},
+            "required": ["status","body","success"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {},
+          "404": {},
+          "409": {}
+        }
+      }
+    }
+  },
+  "webhook_events": ["dispute.created","dispute.updated","payment.authorized","payment.canceled","payment.created","payment.failed","payment.pending","payment.requires_action","payment.succeeded"],
+  "components": {
+    "schemas": {
+      "Dispute": {
+        "properties": {
+          "acceptable": {"type":"boolean"},
+          "account_id": {"type":["string","null"]},
+          "amount": {"type":"number"},
+          "buyer": {"$ref":"#/components/schemas/DisputeBuyer"},
+          "created_at": {"type":"string"},
+          "currency": {"type":"string"},
+          "evidence": {"$ref":"#/components/schemas/DisputeEvidence"},
+          "evidence_due_at": {"type":["string","null"]},
+          "evidence_editable": {"type":"boolean"},
+          "evidence_locked_reason": {"enum":["submitted","response_window_closed","not_contestable",null],"type":["string","null"]},
+          "evidence_submitted_at": {"type":["string","null"]},
+          "fee": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "fee_charged": {"type":"boolean"},
+          "id": {"type":"string"},
+          "inquiry": {"type":"boolean"},
+          "issuer_comments": {"items":{"$ref":"#/components/schemas/DisputeIssuerComment"},"type":"array"},
+          "line_items": {"items":{"$ref":"#/components/schemas/ReceiptLineItem"},"type":"array"},
+          "payment": {"$ref":"#/components/schemas/DisputePayment"},
+          "product_id": {"type":["string","null"]},
+          "reason": {
+            "enum": ["fraudulent","unrecognized","declined_authorization","product_not_received","product_unacceptable","subscription_canceled","credit_not_processed","duplicate","processing_error","documentation_request","bank_cannot_process","other"],
+            "type": "string"
+          },
+          "reason_code": {"type":["string","null"]},
+          "status": {
+            "enum": ["needs_response","warning_needs_response","under_review","warning_under_review","won","lost","prevented","warning_closed"],
+            "type": "string"
+          },
+          "updated_at": {"type":"string"},
+          "variant_id": {"type":["string","null"]}
+        },
+        "required": ["id","status","inquiry","amount","currency","fee_charged","fee","reason","reason_code","issuer_comments","account_id","product_id","variant_id","line_items","evidence_editable","evidence_locked_reason","evidence_due_at","evidence_submitted_at","acceptable","buyer","payment","evidence","created_at","updated_at"],
+        "type": "object"
+      },
+      "DisputeBuyer": {
+        "properties": {
+          "email": {"type":["string","null"]},
+          "member_id": {"type":["string","null"]},
+          "name": {"type":["string","null"]},
+          "user_id": {"type":["string","null"]},
+          "username": {"type":["string","null"]}
+        },
+        "required": ["user_id","member_id","name","username","email"],
+        "type": "object"
+      },
+      "DisputeEvidence": {
+        "properties": {
+          "access_activity_log": {"type":["string","null"]},
+          "billing_address": {"type":["string","null"]},
+          "cancellation_policy_attachment": {"oneOf":[{"$ref":"#/components/schemas/DisputeAttachment"},{"type":"null"}]},
+          "cancellation_policy_disclosure": {"type":["string","null"]},
+          "customer_communication_attachment": {"oneOf":[{"$ref":"#/components/schemas/DisputeAttachment"},{"type":"null"}]},
+          "customer_email_address": {"type":["string","null"]},
+          "customer_name": {"type":["string","null"]},
+          "documents": {"items":{"$ref":"#/components/schemas/DisputeEvidenceDocument"},"type":"array"},
+          "notes": {"type":["string","null"]},
+          "product_description": {"type":["string","null"]},
+          "refund_policy_attachment": {"oneOf":[{"$ref":"#/components/schemas/DisputeAttachment"},{"type":"null"}]},
+          "refund_policy_disclosure": {"type":["string","null"]},
+          "refund_refusal_explanation": {"type":["string","null"]},
+          "service_date": {"type":["string","null"]},
+          "uncategorized_attachment": {"oneOf":[{"$ref":"#/components/schemas/DisputeAttachment"},{"type":"null"}]}
+        },
+        "required": ["access_activity_log","billing_address","cancellation_policy_disclosure","customer_email_address","customer_name","notes","product_description","refund_policy_disclosure","refund_refusal_explanation","service_date","cancellation_policy_attachment","customer_communication_attachment","refund_policy_attachment","uncategorized_attachment","documents"],
+        "type": "object"
+      },
+      "DisputeAttachment": {
+        "properties": {
+          "content_type": {"type":["string","null"]},
+          "filename": {"type":["string","null"]},
+          "id": {"type":["string","null"]},
+          "platform": {"type":"boolean"},
+          "url": {"type":["string","null"]}
+        },
+        "required": ["id","filename","content_type","url","platform"],
+        "type": "object"
+      },
+      "DisputeEvidenceDocument": {
+        "properties": {
+          "blurhash": {"type":["string","null"]},
+          "content_type": {
+            "enum": ["application/pdf","application/json","image/jpeg","image/png","image/webp",null],
+            "type": ["string","null"]
+          },
+          "created_at": {"type":"string"},
+          "document_type": {
+            "enum": ["return_policy","shipping_policy","cancellation_policy","terms_of_service","physical_fulfillment","customer_order_history","product_image","prior_transactions","customer_session","digital_fulfillment","subscription","customer_communication"],
+            "type": "string"
+          },
+          "duration_seconds": {"type":["number","null"]},
+          "filename": {"type":["string","null"]},
+          "height": {"type":["integer","null"]},
+          "id": {"type":"string"},
+          "multipart_chunk_size": {"type":["integer","null"]},
+          "multipart_upload_id": {"type":["string","null"]},
+          "multipart_upload_urls": {"items":{"$ref":"#/components/schemas/FileMultipartUrl"},"type":["array","null"]},
+          "object": {"type":"string"},
+          "removed_by_moderation": {"type":"boolean"},
+          "size": {"type":["integer","null"]},
+          "upload_headers": {"type":"object"},
+          "upload_status": {"enum":["pending","processing","ready","failed"],"type":"string"},
+          "upload_url": {"type":["string","null"]},
+          "url": {"type":["string","null"]},
+          "visibility": {"enum":["public","private"],"type":"string"},
+          "waveform_url": {"type":["string","null"]},
+          "width": {"type":["integer","null"]}
+        },
+        "required": ["object","id","filename","content_type","size","url","removed_by_moderation","upload_status","visibility","created_at","width","height","blurhash","duration_seconds","waveform_url","document_type"],
+        "type": "object"
+      },
+      "FileMultipartUrl": {
+        "properties": {"part_number":{"type":"integer"},"url":{"type":"string"}},
+        "required": ["part_number","url"],
+        "type": "object"
+      },
+      "Money": {
+        "properties": {
+          "amount": {"type":"string"},
+          "currency": {"type":"string"},
+          "decimals": {"type":"integer"},
+          "display_decimals": {"type":"integer"}
+        },
+        "required": ["currency","amount","decimals","display_decimals"],
+        "type": "object"
+      },
+      "DisputeIssuerComment": {
+        "properties": {"received_at":{"type":["string","null"]},"text":{"type":"string"}},
+        "required": ["received_at","text"],
+        "type": "object"
+      },
+      "ReceiptLineItem": {
+        "properties": {
+          "id": {"type":["string","null"]},
+          "label": {"type":["string","null"]},
+          "product_id": {"type":["string","null"]},
+          "product_title": {"type":["string","null"]},
+          "quantity": {"type":"number"},
+          "sku": {"type":["string","null"]},
+          "subtotal": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "variant_id": {"type":["string","null"]},
+          "variant_title": {"type":["string","null"]}
+        },
+        "required": ["id","variant_id","variant_title","product_id","product_title","label","quantity","subtotal","sku"],
+        "type": "object"
+      },
+      "DisputePayment": {
+        "properties": {
+          "amount": {"type":["number","null"]},
+          "card_brand": {"type":["string","null"]},
+          "card_last4": {"type":["string","null"]},
+          "created_at": {"type":"string"},
+          "currency": {"type":["string","null"]},
+          "id": {"type":"string"},
+          "payment_instrument": {"oneOf":[{"$ref":"#/components/schemas/PaymentInstrument"},{"type":"null"}]},
+          "payment_method_type": {"type":["string","null"]},
+          "payment_processor": {"deprecated":true,"type":["string","null"]}
+        },
+        "required": ["id","amount","currency","payment_method_type","payment_processor","card_brand","card_last4","payment_instrument","created_at"],
+        "type": "object"
+      },
+      "PaymentInstrument": {
+        "properties": {
+          "card": {"oneOf":[{"$ref":"#/components/schemas/PaymentInstrumentCard"},{"type":"null"}]},
+          "display_name": {"type":"string"},
+          "icons": {"$ref":"#/components/schemas/PaymentMethodIcons"},
+          "installment_count": {"type":["number","null"]},
+          "payment_method_type": {"type":"string"}
+        },
+        "required": ["payment_method_type","display_name","icons","card","installment_count"],
+        "type": "object"
+      },
+      "PaymentInstrumentCard": {
+        "properties": {
+          "brand": {"type":["string","null"]},
+          "exp_month": {"type":["number","null"]},
+          "exp_year": {"type":["number","null"]},
+          "issuer_identification_number": {"type":["string","null"]},
+          "last4": {"type":["string","null"]},
+          "network_transaction_id": {"type":["string","null"]}
+        },
+        "required": ["brand","last4","issuer_identification_number","exp_month","exp_year","network_transaction_id"],
+        "type": "object"
+      },
+      "PaymentMethodIcons": {
+        "properties": {
+          "card": {"$ref":"#/components/schemas/PaymentMethodIconVariants"},
+          "square": {"$ref":"#/components/schemas/PaymentMethodIconVariants"}
+        },
+        "required": ["square","card"],
+        "type": "object"
+      },
+      "PaymentMethodIconVariants": {
+        "properties": {
+          "dark": {"$ref":"#/components/schemas/PaymentMethodIconFiles"},
+          "light": {"$ref":"#/components/schemas/PaymentMethodIconFiles"}
+        },
+        "required": ["light","dark"],
+        "type": "object"
+      },
+      "PaymentMethodIconFiles": {
+        "properties": {
+          "png_1x": {"type":"string"},
+          "png_2x": {"type":"string"},
+          "png_4x": {"type":"string"},
+          "svg": {"type":"string"}
+        },
+        "required": ["svg","png_1x","png_2x","png_4x"],
+        "type": "object"
+      },
+      "File": {
+        "properties": {
+          "blurhash": {"type":["string","null"]},
+          "content_type": {"type":["string","null"]},
+          "created_at": {"type":"string"},
+          "duration_seconds": {"type":["number","null"]},
+          "filename": {"type":["string","null"]},
+          "height": {"type":["integer","null"]},
+          "id": {"type":"string"},
+          "multipart_chunk_size": {"type":["integer","null"]},
+          "multipart_upload_id": {"type":["string","null"]},
+          "multipart_upload_urls": {"items":{"$ref":"#/components/schemas/FileMultipartUrl"},"type":["array","null"]},
+          "object": {"type":"string"},
+          "removed_by_moderation": {"type":"boolean"},
+          "size": {"type":["integer","null"]},
+          "upload_headers": {"type":"object"},
+          "upload_status": {"enum":["pending","processing","ready","failed"],"type":"string"},
+          "upload_url": {"type":["string","null"]},
+          "url": {"type":["string","null"]},
+          "visibility": {"enum":["public","private"],"type":"string"},
+          "waveform_url": {"type":["string","null"]},
+          "width": {"type":["integer","null"]}
+        },
+        "required": ["object","id","filename","content_type","size","url","removed_by_moderation","upload_status","visibility","created_at","width","height","blurhash","duration_seconds","waveform_url"],
+        "type": "object"
+      },
+      "Payment": {
+        "properties": {
+          "account_id": {"type":["string","null"]},
+          "amount_after_fees": {"$ref":"#/components/schemas/Money"},
+          "auto_capture_at": {"type":["string","null"]},
+          "auto_refunded": {"type":"boolean"},
+          "billing_address": {"oneOf":[{"$ref":"#/components/schemas/PaymentAddress"},{"type":"null"}]},
+          "billing_reason": {"oneOf":[{"$ref":"#/components/schemas/BillingReasons"},{"type":"null"}]},
+          "capture_expires_at": {"type":["string","null"]},
+          "checkout_configuration_id": {"type":["string","null"]},
+          "client_secret": {"type":["string","null"]},
+          "created_at": {"type":"string"},
+          "currency": {"$ref":"#/components/schemas/Currencies"},
+          "customer_email": {"type":["string","null"]},
+          "customer_phone": {"type":["string","null"]},
+          "decline_code": {"oneOf":[{"$ref":"#/components/schemas/PaymentDeclineCodes"},{"type":"null"}]},
+          "dispute_alerted_at": {"type":["string","null"]},
+          "dispute_created_at": {"type":["string","null"]},
+          "failure_message": {"type":["string","null"]},
+          "financing_installments_count": {"type":["number","null"]},
+          "holds": {"items":{"$ref":"#/components/schemas/PaymentHold"},"type":"array"},
+          "id": {"type":"string"},
+          "ip_address": {"type":["string","null"]},
+          "last_payment_attempt_at": {"type":["string","null"]},
+          "line_items": {"items":{"$ref":"#/components/schemas/ReceiptLineItem"},"type":"array"},
+          "member_id": {"type":["string","null"]},
+          "membership_id": {"type":["string","null"]},
+          "metadata": {"type":["object","null"]},
+          "needs_tracking": {"type":["boolean","null"]},
+          "next_payment_attempt_at": {"type":["string","null"]},
+          "paid_at": {"type":["string","null"]},
+          "payment_instrument": {"oneOf":[{"$ref":"#/components/schemas/PaymentInstrument"},{"type":"null"}]},
+          "payment_method_id": {"type":["string","null"]},
+          "payment_method_type": {"oneOf":[{"$ref":"#/components/schemas/PaymentMethodTypes"},{"type":"null"}]},
+          "payment_rule_matches": {"items":{"$ref":"#/components/schemas/PaymentRuleMatch"},"type":"array"},
+          "payments_failed": {"type":"number"},
+          "presentment_refunded_amount": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "presentment_tax_amount": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "presentment_total": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "product_id": {"type":["string","null"]},
+          "promo_code_id": {"type":["string","null"]},
+          "quote_id": {"type":["string","null"]},
+          "recovery_url": {"type":["string","null"]},
+          "refundable": {"type":"boolean"},
+          "refunded_amount": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "refunded_at": {"type":["string","null"]},
+          "response_due_at": {"type":["string","null"]},
+          "retryable": {"type":"boolean"},
+          "risk_score": {"type":["number","null"]},
+          "risk_signals": {"deprecated":true,"type":["object","null"]},
+          "settlement_time_at": {"type":["string","null"]},
+          "shipment_id": {"type":["string","null"]},
+          "shipping_address": {"oneOf":[{"$ref":"#/components/schemas/PaymentAddress"},{"type":"null"}]},
+          "status": {"$ref":"#/components/schemas/ReceiptStatus"},
+          "substatus": {"$ref":"#/components/schemas/FriendlyReceiptStatus"},
+          "subtotal": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "tax_amount": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "tax_behavior": {"oneOf":[{"$ref":"#/components/schemas/ReceiptTaxBehaviors"},{"type":"null"}]},
+          "tax_refunded_amount": {"$ref":"#/components/schemas/Money"},
+          "three_ds_verified": {"type":"boolean"},
+          "total": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "updated_at": {"type":"string"},
+          "usd_total": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "user": {"oneOf":[{"$ref":"#/components/schemas/UserSummary"},{"type":"null"}]},
+          "user_agent": {"type":["string","null"]},
+          "variant_id": {"type":["string","null"]},
+          "verification_checks": {"oneOf":[{"$ref":"#/components/schemas/PaymentVerificationChecks"},{"type":"null"}]},
+          "voidable": {"type":"boolean"},
+          "wuid": {"type":["string","null"]}
+        },
+        "required": ["id","status","substatus","billing_reason","refundable","retryable","voidable","account_id","user","member_id","membership_id","variant_id","product_id","line_items","promo_code_id","checkout_configuration_id","shipment_id","currency","total","subtotal","tax_amount","tax_behavior","quote_id","refunded_amount","tax_refunded_amount","auto_refunded","amount_after_fees","usd_total","payment_method_type","payment_method_id","payment_instrument","customer_email","presentment_total","presentment_tax_amount","presentment_refunded_amount","customer_phone","billing_address","shipping_address","needs_tracking","payments_failed","failure_message","decline_code","recovery_url","three_ds_verified","verification_checks","risk_score","ip_address","user_agent","wuid","payment_rule_matches","risk_signals","financing_installments_count","metadata","created_at","updated_at","paid_at","last_payment_attempt_at","next_payment_attempt_at","refunded_at","dispute_alerted_at","dispute_created_at","auto_capture_at","capture_expires_at","response_due_at","settlement_time_at","holds","client_secret"],
+        "type": "object"
+      },
+      "PaymentAddress": {
+        "properties": {
+          "city": {"type":["string","null"]},
+          "country": {"type":["string","null"]},
+          "line1": {"type":["string","null"]},
+          "line2": {"type":["string","null"]},
+          "name": {"type":["string","null"]},
+          "postal_code": {"type":["string","null"]},
+          "state": {"type":["string","null"]}
+        },
+        "required": ["name","line1","line2","city","state","postal_code","country"],
+        "type": "object"
+      },
+      "BillingReasons": {
+        "enum": ["subscription_create","subscription_cycle","subscription_update","one_time","manual","subscription"],
+        "type": "string"
+      },
+      "Currencies": {
+        "enum": ["usd","sgd","inr","aud","brl","cad","dkk","eur","nok","gbp","sek","chf","hkd","huf","jpy","mxn","myr","pln","czk","nzd","aed","eth","ape","cop","ron","thb","bgn","idr","dop","php","try","krw","twd","vnd","pkr","clp","uyu","ars","zar","dzd","tnd","mad","kes","kwd","jod","all","xcd","amd","bsd","bhd","bob","bam","khr","crc","xof","egp","etb","gmd","ghs","gtq","gyd","ils","jmd","mop","mga","mur","mdl","mnt","nad","ngn","mkd","omr","pyg","pen","qar","rwf","sar","rsd","lkr","tzs","ttd","uzs","rub","btc","cny","usdt","kzt","awg","whop_usd","xau"],
+        "type": "string"
+      },
+      "PaymentDeclineCodes": {
+        "enum": ["insufficient_funds","lost_card","stolen_card","expired_card","suspected_fraud","invalid_card_number","invalid_cvc","invalid_cvc_or_expiration","incorrect_pin","authentication_required","card_not_supported","currency_not_supported","duplicate_transaction","generic_decline","invalid_account","invalid_amount","processing_error","restricted_card","card_velocity_exceeded","contact_issuer","card_declined_by_issuer","bank_declined","regulatory_blocked","transaction_not_permitted","transaction_stopped","card_type_not_supported","issuer_not_found","closed_account","issuer_unavailable","invalid_zip","invalid_expiry_month","invalid_expiry_year","invalid_expiry","invalid_transaction","cannot_authorize","pin_required","pin_try_exceeded","provider_declined","high_risk","test_mode_decline","merchant_blacklist","reenter_transaction","invalid_pin","pin_required_as","withdrawal_count_limit_exceeded","invalid_country","issuer_error","invalid_card_holder_name","no_accounts","transaction_cancelled","three_d_secure_success","three_d_secure_canceled","three_d_secure_invalid_card_number","three_d_secure_generic_error","three_d_secure_timeout","three_d_secure_failed","three_d_secure_card_not_enrolled","three_d_secure_fraud","three_d_secure_too_many_attempts","three_d_secure_rejected_by_bank","three_d_secure_reported_lost_or_stolen","blocked_by_cardholder","test_mode_test_card","try_again_later","transaction_not_allowed","bank_insufficient_funds","bank_account_not_found","bank_account_closed","bank_account_frozen","bank_invalid_routing_number","bank_non_transaction_account","bank_authorization_revoked","bank_payment_stopped","bank_not_authorized","bank_account_holder_deceased","bank_duplicate","bank_amount_error","bank_regulatory_blocked","bank_details_invalid","bank_processing_error","bank_generic_decline","sepa_invalid_iban","sepa_no_mandate","sepa_mandate_data_invalid","sepa_disputed","sepa_refused_by_customer","sepa_generic_decline"],
+        "type": "string"
+      },
+      "PaymentHold": {
+        "properties": {
+          "amount": {"$ref":"#/components/schemas/Money"},
+          "percentage": {"type":["number","null"]},
+          "release_at": {"type":["string","null"]},
+          "type": {"enum":["reserve","bnpl","sequra","fraud_hold","preshipment_hold"],"type":"string"}
+        },
+        "required": ["type","amount","percentage","release_at"],
+        "type": "object"
+      },
+      "PaymentMethodTypes": {
+        "enum": ["acss_debit","addi","affirm","afterpay_clearpay","alipay","alipayhk","alma","amazon_pay","apple","apple_pay","au_bank_transfer","au_becs_debit","bacs_debit","bancolombia","bancontact","bank_wire","billie","blik","boleto","bre_b","ca_bank_transfer","capchase_pay","card","card_present","card_installments_three","card_installments_six","card_installments_twelve","cashapp","claritypay","coinbase","crypto","custom","customer_balance","demo_pay","duitnow_qr","efecty","eps","eu_bank_transfer","fpx","flex_pay","gb_bank_transfer","gcash","giropay","google_pay","gopay","grabpay","id_bank_transfer","ideal","interac","international_bank_wire","kakao_pay","klarna","klarna_pay_now","konbini","kr_card","kr_market","kriya","kueski","link","mb_way","m_pesa","mercado_pago","mercado_pago_ar","mercado_pago_mx","mobilepay","modo","mondu","multibanco","naver_pay","nequi","netbanking","ng_bank","ng_bank_transfer","ng_card","ng_market","ng_ussd","ng_wallet","nupay","nz_bank_account","oney","oney_3x","oney_4x","opay","oxxo","p24","pago_efectivo","pse","pay_by_bank","payco","paynow","paypal","paypal_express","paypay","payto","payto_email","payto_phone","payto_bank_account","pix","platform_balance","promptpay","qris","rapipago","rechnung","revolut_pay","samsung_pay","satispay","scalapay","sencillito","sepa_debit","sequra","servipag","sezzle","shop_pay","shopeepay","sofort","south_korea_market","spei","splitit","sunbit","swish","tabby","tamara","touch_n_go","twint","upi","us_bank_account","us_bank_transfer","venmo","verve","vipps","webpay","wechat_pay","whop_pay","yape","zip","coinflow","unknown"],
+        "type": "string"
+      },
+      "PaymentRuleMatch": {
+        "properties": {
+          "action": {"enum":["allow","block","review","enforce_3ds"],"type":"string"},
+          "id": {"type":"string"},
+          "name": {"type":["string","null"]}
+        },
+        "required": ["id","name","action"],
+        "type": "object"
+      },
+      "ReceiptStatus": {
+        "enum": ["draft","open","authorized","paid","pending","uncollectible","unresolved","void"],
+        "type": "string"
+      },
+      "FriendlyReceiptStatus": {
+        "enum": ["succeeded","requires_capture","pending","failed","blocked","past_due","canceled","price_too_low","uncollectible","refunded","auto_refunded","partially_refunded","dispute_warning","dispute_needs_response","dispute_warning_needs_response","resolution_needs_response","dispute_under_review","dispute_warning_under_review","resolution_under_review","dispute_won","dispute_warning_closed","resolution_won","dispute_lost","dispute_closed","resolution_lost","drafted","incomplete","unresolved","open_dispute","open_resolution"],
+        "type": "string"
+      },
+      "ReceiptTaxBehaviors": {"enum":["exclusive","inclusive","unspecified","unable_to_collect"],"type":"string"},
+      "UserSummary": {
+        "properties": {
+          "id": {"type":"string"},
+          "name": {"type":["string","null"]},
+          "profile_picture": {"$ref":"#/components/schemas/UserProfilePicture"},
+          "username": {"type":"string"}
+        },
+        "required": ["id","username","name","profile_picture"],
+        "type": "object"
+      },
+      "UserProfilePicture": {"properties":{"url":{"type":"string"}},"required":["url"],"type":"object"},
+      "PaymentVerificationChecks": {
+        "properties": {
+          "address_line1": {"type":["string","null"]},
+          "arn": {"type":["string","null"]},
+          "authorization_code": {"type":["string","null"]},
+          "card_holder_name": {"type":["string","null"]},
+          "card_security_code": {"type":["string","null"]},
+          "zip_code": {"type":["string","null"]}
+        },
+        "required": ["address_line1","zip_code","card_holder_name","card_security_code","authorization_code","arn"],
+        "type": "object"
+      },
+      "V1ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {"code":{"type":"string"},"message":{"type":"string"},"type":{"type":"string"}},
+            "required": ["type","message"],
+            "type": "object"
+          }
+        },
+        "required": ["error"],
+        "type": "object"
+      },
+      "PaymentInput": {
+        "properties": {
+          "account_id": {"type":"string"},
+          "promo_code": {"type":["string","null"]},
+          "promo_code_id": {"type":["string","null"]},
+          "variant": {
+            "properties": {
+              "allow_multiple_quantity": {"type":["boolean","null"]},
+              "application_fee_amount": {"type":["number","null"]},
+              "billing_period": {"type":["integer","null"]},
+              "billing_type": {"enum":[null,"renewal","one_time"],"type":["string","null"]},
+              "currency": {
+                "enum": ["usd","sgd","inr","aud","brl","cad","dkk","eur","nok","gbp","sek","chf","hkd","huf","jpy","mxn","myr","pln","czk","nzd","aed","eth","ape","cop","ron","thb","bgn","idr","dop","php","try","krw","twd","vnd","pkr","clp","uyu","ars","zar","dzd","tnd","mad","kes","kwd","jod","all","xcd","amd","bsd","bhd","bob","bam","khr","crc","xof","egp","etb","gmd","ghs","gtq","gyd","ils","jmd","mop","mga","mur","mdl","mnt","nad","ngn","mkd","omr","pyg","pen","qar","rwf","sar","rsd","lkr","tzs","ttd","uzs","rub","btc","cny","usdt","kzt","awg","whop_usd","xau"],
+                "type": "string"
+              },
+              "expiration_days": {"type":["integer","null"]},
+              "force_create_new_plan": {"type":["boolean","null"]},
+              "initial_price": {"type":["number","null"]},
+              "internal_notes": {"type":["string","null"]},
+              "override_tax_type": {"enum":[null,"exclusive","inclusive","unspecified"],"type":["string","null"]},
+              "product": {
+                "properties": {
+                  "collect_shipping_address": {"type":["boolean","null"]},
+                  "custom_statement_descriptor": {"type":["string","null"]},
+                  "external_identifier": {"pattern":"\\S","type":"string"},
+                  "global_affiliate_percentage": {"type":["number","null"]},
+                  "global_affiliate_status": {"enum":[null,"enabled","disabled"],"type":["string","null"]},
+                  "headline": {"type":["string","null"]},
+                  "product_tax_code_id": {"type":["string","null"]},
+                  "redirect_purchase_url": {"type":["string","null"]},
+                  "route": {"type":["string","null"]},
+                  "title": {"pattern":"\\S","type":"string"},
+                  "visibility": {"default":"hidden","enum":["visible","hidden","archived","quick_link"],"type":"string"}
+                },
+                "required": ["external_identifier","title"],
+                "type": ["object","null"]
+              },
+              "product_id": {"type":["string","null"]},
+              "renewal_price": {"type":["number","null"]},
+              "title": {"type":["string","null"]},
+              "trial_period_days": {"type":["integer","null"]},
+              "visibility": {"enum":[null,"visible","hidden","archived","quick_link"],"type":["string","null"]}
+            },
+            "required": ["currency"],
+            "type": "object"
+          },
+          "variant_id": {"type":"string"}
+        },
+        "required": ["account_id"],
+        "type": "object"
+      },
+      "PaymentStatus": {
+        "properties": {
+          "account": {"oneOf":[{"$ref":"#/components/schemas/AccountSummary"},{"type":"null"}]},
+          "auto_capture_at": {"type":["string","null"]},
+          "capture_expires_at": {"type":["string","null"]},
+          "id": {"type":"string"},
+          "last_payment_error": {"oneOf":[{"$ref":"#/components/schemas/PaymentLastPaymentError"},{"type":"null"}]},
+          "next_action": {"oneOf":[{"$ref":"#/components/schemas/PaymentNextAction"},{"type":"null"}]},
+          "object": {"type":"string"},
+          "processing_details": {"oneOf":[{"$ref":"#/components/schemas/PaymentProcessingDetails"},{"type":"null"}]},
+          "return_url": {"type":["string","null"]},
+          "status": {
+            "enum": ["requires_confirmation","requires_action","requires_capture","confirming","processing","succeeded","canceled"],
+            "type": "string"
+          }
+        },
+        "required": ["id","object","account","status","next_action","processing_details","last_payment_error","return_url","capture_expires_at","auto_capture_at"],
+        "type": "object"
+      },
+      "AccountSummary": {
+        "properties": {"id":{"type":"string"},"title":{"type":"string"}},
+        "required": ["id","title"],
+        "type": "object"
+      },
+      "PaymentLastPaymentError": {
+        "properties": {
+          "code": {"type":["string","null"]},
+          "decline_code": {
+            "enum": ["insufficient_funds","lost_card","stolen_card","expired_card","suspected_fraud","invalid_card_number","invalid_cvc","invalid_cvc_or_expiration","incorrect_pin","authentication_required","card_not_supported","currency_not_supported","duplicate_transaction","generic_decline","invalid_account","invalid_amount","processing_error","restricted_card","card_velocity_exceeded","contact_issuer","card_declined_by_issuer","bank_declined","regulatory_blocked","transaction_not_permitted","transaction_stopped","card_type_not_supported","issuer_not_found","closed_account","issuer_unavailable","invalid_zip","invalid_expiry_month","invalid_expiry_year","invalid_expiry","invalid_transaction","cannot_authorize","pin_required","pin_try_exceeded","provider_declined","high_risk","test_mode_decline","merchant_blacklist","reenter_transaction","invalid_pin","pin_required_as","withdrawal_count_limit_exceeded","invalid_country","issuer_error","invalid_card_holder_name","no_accounts","transaction_cancelled","three_d_secure_success","three_d_secure_canceled","three_d_secure_invalid_card_number","three_d_secure_generic_error","three_d_secure_timeout","three_d_secure_failed","three_d_secure_card_not_enrolled","three_d_secure_fraud","three_d_secure_too_many_attempts","three_d_secure_rejected_by_bank","three_d_secure_reported_lost_or_stolen","blocked_by_cardholder","test_mode_test_card","try_again_later","transaction_not_allowed","bank_insufficient_funds","bank_account_not_found","bank_account_closed","bank_account_frozen","bank_invalid_routing_number","bank_non_transaction_account","bank_authorization_revoked","bank_payment_stopped","bank_not_authorized","bank_account_holder_deceased","bank_duplicate","bank_amount_error","bank_regulatory_blocked","bank_details_invalid","bank_processing_error","bank_generic_decline","sepa_invalid_iban","sepa_no_mandate","sepa_mandate_data_invalid","sepa_disputed","sepa_refused_by_customer","sepa_generic_decline",null],
+            "type": ["string","null"]
+          },
+          "message": {"type":["string","null"]}
+        },
+        "required": ["code","decline_code","message"],
+        "type": "object"
+      },
+      "PaymentNextAction": {
+        "oneOf": [
+          {"$ref":"#/components/schemas/PaymentNextActionRedirect"},
+          {"$ref":"#/components/schemas/PaymentNextActionDisplayInstructions"},
+          {"$ref":"#/components/schemas/PaymentNextActionAwaitConfirmation"},
+          {"$ref":"#/components/schemas/PaymentNextActionCollectCardPresent"}
+        ]
+      },
+      "PaymentNextActionRedirect": {
+        "properties": {
+          "data": {"$ref":"#/components/schemas/PaymentNextActionRedirectData"},
+          "render": {"items":{"enum":["inline","full_page"],"type":"string"},"type":"array"},
+          "type": {"enum":["redirect"],"type":"string"}
+        },
+        "required": ["type","render","data"],
+        "title": "Redirect",
+        "type": "object"
+      },
+      "PaymentNextActionRedirectData": {
+        "properties": {"frame_max_width":{"type":["integer","null"]},"url":{"type":"string"}},
+        "required": ["url","frame_max_width"],
+        "type": "object"
+      },
+      "PaymentNextActionDisplayInstructions": {
+        "properties": {
+          "data": {"$ref":"#/components/schemas/PaymentInstructions"},
+          "render": {"items":{"enum":["inline","full_page"],"type":"string"},"type":"array"},
+          "type": {"enum":["display_instructions"],"type":"string"}
+        },
+        "required": ["type","render","data"],
+        "title": "Display instructions",
+        "type": "object"
+      },
+      "PaymentInstructions": {
+        "oneOf": [
+          {"$ref":"#/components/schemas/PaymentVoucherInstructions"},
+          {"$ref":"#/components/schemas/PaymentQrInstructions"},
+          {"$ref":"#/components/schemas/PaymentBankTransferInstructions"}
+        ]
+      },
+      "PaymentVoucherInstructions": {
+        "properties": {
+          "kind": {"enum":["voucher"],"type":"string"},
+          "voucher": {"$ref":"#/components/schemas/PaymentVoucher"}
+        },
+        "required": ["kind","voucher"],
+        "title": "Voucher",
+        "type": "object"
+      },
+      "PaymentVoucher": {
+        "properties": {
+          "amount": {"$ref":"#/components/schemas/Money"},
+          "barcode": {"type":"string"},
+          "barcode_format": {"type":"string"},
+          "company_name": {"type":"string"},
+          "document_url": {"type":"string"},
+          "expires_at": {"type":"string"},
+          "provider_logo": {"type":"string"},
+          "provider_name": {"type":"string"},
+          "reference": {"type":"string"}
+        },
+        "required": [],
+        "type": "object"
+      },
+      "PaymentQrInstructions": {
+        "properties": {"kind":{"enum":["qr"],"type":"string"},"qr":{"$ref":"#/components/schemas/PaymentQr"}},
+        "required": ["kind","qr"],
+        "title": "QR",
+        "type": "object"
+      },
+      "PaymentQr": {
+        "properties": {
+          "amount": {"$ref":"#/components/schemas/Money"},
+          "copy_code": {"type":"string"},
+          "document_url": {"type":"string"},
+          "expires_at": {"type":"string"},
+          "key": {"type":"string"},
+          "qr_code": {"type":"string"},
+          "qr_format": {"type":"string"}
+        },
+        "required": [],
+        "type": "object"
+      },
+      "PaymentBankTransferInstructions": {
+        "properties": {
+          "bank_transfer": {"$ref":"#/components/schemas/PaymentBankTransfer"},
+          "kind": {"enum":["bank_transfer"],"type":"string"}
+        },
+        "required": ["kind","bank_transfer"],
+        "title": "Bank transfer",
+        "type": "object"
+      },
+      "PaymentBankTransfer": {
+        "properties": {
+          "account_number": {"type":"string"},
+          "account_number_label": {"type":"string"},
+          "amount": {"$ref":"#/components/schemas/Money"},
+          "bank_account_type": {"type":"string"},
+          "bank_address": {"type":"string"},
+          "bank_branch": {"type":"string"},
+          "bank_code": {"type":"string"},
+          "bank_code_label": {"type":"string"},
+          "bank_name": {"type":"string"},
+          "beneficiary_document": {"type":"string"},
+          "beneficiary_document_type": {"type":"string"},
+          "beneficiary_name": {"type":"string"},
+          "document_url": {"type":"string"},
+          "expires_at": {"type":"string"},
+          "instructions": {"type":"string"},
+          "intermediary_bic": {"type":"string"},
+          "reference": {"type":"string"},
+          "routing_number": {"type":"string"},
+          "secondary_account_number": {"type":"string"},
+          "secondary_account_number_label": {"type":"string"}
+        },
+        "required": [],
+        "type": "object"
+      },
+      "PaymentNextActionAwaitConfirmation": {
+        "properties": {
+          "data": {"$ref":"#/components/schemas/PaymentNextActionAwaitConfirmationData"},
+          "render": {"items":{"enum":["inline","full_page"],"type":"string"},"type":"array"},
+          "type": {"enum":["await_confirmation"],"type":"string"}
+        },
+        "required": ["type","render","data"],
+        "title": "Await confirmation",
+        "type": "object"
+      },
+      "PaymentNextActionAwaitConfirmationData": {"properties":{"expires_at":{"type":"string"}},"required":["expires_at"],"type":"object"},
+      "PaymentNextActionCollectCardPresent": {
+        "properties": {
+          "data": {"$ref":"#/components/schemas/PaymentNextActionCollectCardPresentData"},
+          "type": {"enum":["collect_card_present"],"type":"string"}
+        },
+        "required": ["type","data"],
+        "title": "Collect card present",
+        "type": "object"
+      },
+      "PaymentNextActionCollectCardPresentData": {"properties":{"client_secret":{"type":"string"}},"required":["client_secret"],"type":"object"},
+      "PaymentProcessingDetails": {"properties":{"expected_by":{"type":["string","null"]}},"required":["expected_by"],"type":"object"},
+      "PaymentFee": {
+        "properties": {
+          "amount": {"$ref":"#/components/schemas/Money"},
+          "collected_at": {"type":["string","null"]},
+          "label": {"type":"string"},
+          "origin": {
+            "enum": ["stripe_domestic_processing_fee","stripe_international_processing_fee","stripe_fixed_processing_fee","stripe_billing_fee","stripe_radar_fee","sales_tax_remittance","sales_tax_remittance_reversal","stripe_sales_tax_fee","whop_processing_fee","marketplace_affiliate_fee","affiliate_fee","crypto_fee","stripe_standard_processing_fee","paypal_fee","stripe_payout_fee","dispute_fee","dispute_alert_fee","dispute_representment_fee","apple_processing_fee","buyer_fee","sezzle_processing_fee","splitit_processing_fee","platform_balance_processing_fee","payment_processing_percentage_fee","payment_processing_fixed_fee","cross_border_percentage_fee","fx_percentage_fee","orchestration_percentage_fee","three_ds_fixed_fee","billing_percentage_fee","revshare_percentage_fee","application_fee","high_risk_merchant_fee","economic_intelligence_percentage_fee","payment_return_fee"],
+            "type": "string"
+          },
+          "settlement_amount": {"$ref":"#/components/schemas/Money"},
+          "type": {"enum":["whop_fee","processing_fee","affiliate_program_fee","other_fee"],"type":"string"}
+        },
+        "required": ["type","origin","label","description","amount","settlement_amount","collected_at"],
+        "type": "object"
+      },
+      "PaymentPdf": {
+        "properties": {"expires_at":{"type":"string"},"url":{"type":"string"}},
+        "required": ["url","expires_at"],
+        "type": "object"
+      },
+      "Refund": {
+        "properties": {
+          "account_id": {"type":["string","null"]},
+          "amount": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "created_at": {"type":"string"},
+          "failure_message": {"type":["string","null"]},
+          "failure_reason": {
+            "enum": ["bank_declined","expired_or_canceled_card","lost_or_stolen_card","insufficient_funds","charge_disputed","not_refundable","merchant_request","unknown",null],
+            "type": ["string","null"]
+          },
+          "id": {"type":"string"},
+          "metadata": {"type":["object","null"]},
+          "original_amount": {"$ref":"#/components/schemas/Money"},
+          "payment_id": {"type":"string"},
+          "provider": {"type":"string"},
+          "provider_created_at": {"type":["string","null"]},
+          "reason": {
+            "enum": ["duplicate","fraudulent","requested_by_customer","expired_uncaptured_charge","dispute_alert",null],
+            "type": ["string","null"]
+          },
+          "reference_status": {"enum":["available","pending","unavailable",null],"type":["string","null"]},
+          "reference_type": {
+            "enum": ["acquirer_reference_number","retrieval_reference_number","system_trace_audit_number",null],
+            "type": ["string","null"]
+          },
+          "reference_value": {"type":["string","null"]},
+          "status": {"enum":["pending","requires_action","succeeded","failed","canceled"],"type":"string"},
+          "updated_at": {"type":"string"},
+          "visa_rdr": {"type":"boolean"}
+        },
+        "required": ["id","payment_id","account_id","status","amount","original_amount","provider","reason","failure_reason","failure_message","reference_status","reference_type","reference_value","visa_rdr","metadata","provider_created_at","created_at","updated_at"],
+        "type": "object"
+      },
+      "WebhookListItem": {
+        "properties": {
+          "api_version": {"enum":["v1","v2","v5"],"type":"string"},
+          "api_version_date": {"type":["string","null"]},
+          "child_resource_events": {"type":"boolean"},
+          "consecutive_failures": {"type":"integer"},
+          "created_at": {"type":"string"},
+          "disabled_at": {"type":["string","null"]},
+          "disabled_reason": {"enum":["delivery_failures",null],"type":["string","null"]},
+          "enabled": {"type":"boolean"},
+          "events": {
+            "items": {
+              "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","withdrawal.created","withdrawal.updated","withdrawal.reversed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed","membership.went_valid","membership.went_invalid","membership.metadata_updated","resolution.created","resolution.updated","resolution.decided","payment.affiliate_reward_created","membership.experience_claimed","app_membership.went_valid","app_membership.went_invalid","app_payment.created","app_payment.succeeded","app_payment.failed","app_payment.pending","app_payment.requires_action","app_membership.cancel_at_period_end_changed"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "failing_since": {"type":["string","null"]},
+          "id": {"type":"string"},
+          "last_failure_at": {"type":["string","null"]},
+          "resource_id": {"type":"string"},
+          "title": {"type":["string","null"]},
+          "url": {"type":"string"},
+          "webhook_secret": {"type":["string","null"]}
+        },
+        "required": ["id","title","url","enabled","events","api_version","api_version_date","created_at","child_resource_events","webhook_secret","resource_id","consecutive_failures","failing_since","last_failure_at","disabled_at","disabled_reason"],
+        "type": "object"
+      },
+      "Webhook": {
+        "properties": {
+          "api_version": {"enum":["v1","v2","v5"],"type":"string"},
+          "api_version_date": {"type":["string","null"]},
+          "child_resource_events": {"type":"boolean"},
+          "consecutive_failures": {"type":"integer"},
+          "created_at": {"type":"string"},
+          "disabled_at": {"type":["string","null"]},
+          "disabled_reason": {"enum":["delivery_failures",null],"type":["string","null"]},
+          "enabled": {"type":"boolean"},
+          "events": {
+            "items": {
+              "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","withdrawal.created","withdrawal.updated","withdrawal.reversed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed","membership.went_valid","membership.went_invalid","membership.metadata_updated","resolution.created","resolution.updated","resolution.decided","payment.affiliate_reward_created","membership.experience_claimed","app_membership.went_valid","app_membership.went_invalid","app_payment.created","app_payment.succeeded","app_payment.failed","app_payment.pending","app_payment.requires_action","app_membership.cancel_at_period_end_changed"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "failing_since": {"type":["string","null"]},
+          "id": {"type":"string"},
+          "last_failure_at": {"type":["string","null"]},
+          "resource_id": {"type":"string"},
+          "testable_events": {
+            "items": {
+              "enum": ["account.updated","account.financing_approved","account.financing_denied","account.financing_disabled","invoice.created","invoice.marked_uncollectible","invoice.paid","invoice.past_due","invoice.voided","membership.activated","membership.deactivated","membership.trial_ending_soon","membership.updated","entry.created","entry.approved","entry.denied","entry.deleted","export.completed","export.failed","setup_intent.requires_action","setup_intent.succeeded","setup_intent.canceled","ledger_account.funds_available","swap.completed","deposit.succeeded","financial_activity.funds_available","transfer.created","transfer.completed","transfer.failed","withdrawal.created","withdrawal.updated","withdrawal.reversed","payout.created","payout.updated","payout.reversed","card_transaction.created","card_transaction.updated","card_transaction.completed","card_transaction.declined","card_transaction.reversed","card.created","card.updated","card.frozen","card.canceled","card_application.created","card_application.updated","card_application.approved","card_application.denied","course_lesson_interaction.completed","domain.created","domain.updated","domain.deleted","payout_method.created","verification.succeeded","identity_profile.approved","identity_profile.rejected","identity_profile.needs_action","identity_profile.updated","payout_account.status_updated","payment.authorized","payment.canceled","resolution_center_case.created","resolution_center_case.updated","resolution_center_case.decided","product.created","product.updated","product.deleted","product.published","product.unpublished","plan.created","plan.updated","plan.deleted","shipment.created","shipment.updated","member.created","member.updated","ad_campaign.created","ad_campaign.payment_failed","ad_campaign.updated","ad_campaign.events","ad_group.created","ad_group.updated","ad.created","ad.updated","app_installation.created","app_installation.deleted","events.created","chat.message.created","chat.reaction.created","payment.created","payment.succeeded","payment.failed","payment.pending","payment.requires_action","dispute.created","dispute.updated","refund.created","refund.updated","dispute_alert.created","membership.cancel_at_period_end_changed","membership.went_valid","membership.went_invalid","membership.metadata_updated","resolution.created","resolution.updated","resolution.decided","payment.affiliate_reward_created","membership.experience_claimed","app_membership.went_valid","app_membership.went_invalid","app_payment.created","app_payment.succeeded","app_payment.failed","app_payment.pending","app_payment.requires_action","app_membership.cancel_at_period_end_changed"],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {"type":["string","null"]},
+          "url": {"type":"string"},
+          "webhook_secret": {"type":["string","null"]}
+        },
+        "required": ["id","title","url","enabled","events","api_version","api_version_date","created_at","child_resource_events","webhook_secret","resource_id","consecutive_failures","failing_since","last_failure_at","disabled_at","disabled_reason","testable_events"],
+        "type": "object"
+      },
+      "WebhookDelivery": {
+        "properties": {
+          "event": {"type":["string","null"]},
+          "id": {"type":"string"},
+          "replayed_from": {"type":["string","null"]},
+          "request_body": {"type":"object"},
+          "resource_id": {"type":"string"},
+          "response_body": {"type":["object","null"]},
+          "response_code": {"type":"number"},
+          "sent_at": {"type":"string"},
+          "status": {"enum":["success","error"],"type":"string"},
+          "success": {"type":"boolean"},
+          "total_time": {"type":"number"}
+        },
+        "required": ["id","event","replayed_from","request_body","resource_id","response_body","response_code","sent_at","status","success","total_time"],
+        "type": "object"
+      }
+    }
+  }
+}

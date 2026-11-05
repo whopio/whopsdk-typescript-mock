@@ -80,7 +80,12 @@ export class ExampleGenerator {
       ? this.generateFromSchema(schema, resourceName, undefined)
       : this.fallbackExample(resourceName);
 
-    return this.deepMerge(base, overrides);
+    const record = this.deepMerge(base, overrides);
+    if (['payment', 'refund', 'dispute'].includes(resourceName)) {
+      record.created_at ??= new Date().toISOString();
+      record.updated_at ??= record.created_at;
+    }
+    return record;
   }
 
   private generateFromSchema(

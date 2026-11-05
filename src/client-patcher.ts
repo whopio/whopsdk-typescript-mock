@@ -26,7 +26,7 @@ export class ClientPatcher {
     if (!(REQUESTER_KEY in this.client)) {
       throw new Error(
         `Client does not expose ${REQUESTER_KEY} for mock installation. ` +
-        `Make sure you're using a compatible version of @whop/sdk.`
+        `For @whop/sdk 2.7.0 use new WhopClient({ token: 'test', fetch: WhopMock.createFetch() }).`
       );
     }
 

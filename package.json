@@ -9,10 +9,25 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "npm run build && tsx tests/payout-test.ts && tsx tests/dispute-test.ts && tsx tests/payments-test.ts",
+    "test:baseline": "node scripts/test-upstream.mjs",
+    "test:workflow": "npm run build && node --test examples/dispute-workflow.test.mjs",
+    "audit:sdk": "npm run build && node scripts/audit-sdk.mjs",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write src/**/*.ts",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test:current": "npm run build && node --test tests/current-api.test.mjs",
+    "test:http": "npm run build && node --test tests/http-server.test.mjs tests/dispute-platform.test.mjs tests/partner-contract.test.mjs tests/expanded-http.test.mjs tests/session-isolation.test.mjs",
+    "test:all": "npm run test:baseline && npm run test:compat && npm run test:http && npm run test:partners",
+    "test:partners": "npm run build && node tests/partner/partner-runner.mjs tests/partner/evidence-worker.mjs && node tests/partner/reliability-client.mjs && node tests/partner/scenario-author.mjs",
+    "serve:mock": "npm run build && node scripts/serve-mock.mjs",
+    "check:parity": "node scripts/check-parity.mjs",
+    "receive:webhooks": "npm run build && node examples/http/receiver.mjs",
+    "smoke:http": "node examples/http/smoke.mjs",
+    "test:compat": "npm run build && node --test tests/current-api.test.mjs tests/current-surface.test.mjs tests/api-behavior.test.mjs tests/schema-validation.test.mjs tests/parity-check.test.mjs examples/dispute-workflow.test.mjs && node scripts/audit-sdk.mjs",
+    "smoke:disputes": "node examples/http/disputes.mjs",
+    "seed:mock": "node scripts/seed-mock.mjs",
+    "check:docs": "node scripts/check-current-docs.mjs"
   },
   "keywords": [
     "whop",
@@ -24,10 +39,12 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@whop/sdk": "2.7.0",
     "eslint": "^8.55.0",
     "prettier": "^3.1.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "js-yaml": "4.2.0"
   },
   "files": [
     "dist",
@@ -37,6 +54,13 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./http": {
+      "types": "./dist/http-server.d.ts",
+      "import": "./dist/http-server.js"
     }
+  },
+  "dependencies": {
+    "ajv": "6.12.6"
   }
 }
