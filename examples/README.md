@@ -27,8 +27,9 @@ before acting so late events cannot reopen submitted cases.
 | SDK connection         | `WhopMock.createFetch()` supplies the SDK's public transport. No private SDK patching and no live network fallback. Default REST date `2026-10-28`; any well-formed date uses the closest modeled behavior (see the HTTP version guide).                                                                          |
 | Disputes               | List/retrieve current nested evidence, buyer, payment and account fields; `dspt_` IDs; PATCH evidence; `uploadEvidence` replaces the complete document array; `submit` starts a pending fixture submission.                                       |
 | Payment/refund context | List/retrieve; current `Money` objects with major-unit decimal strings; `rf_` IDs; refunds filter by `payment_id` and `account_id`. Seed pending, failed, partial or full refund outcomes with helpers. Payment writes use seeded outcomes; see the complete HTTP guide below. |
+| Dispute alerts         | List/retrieve with `dspa_` IDs; filter by account, payment, type and creation date; sort by `created_at`, `reported_at` or `amount`. Create with `helper.createDisputeAlert({ payment_id, type })`; older `alert_type`/`charge_for_alert` fixtures read as the public fields. |
 | Files                  | Create → synthetic upload URL/headers → PUT bytes through mock fetch → retrieve `ready`; list explicit `file_ids`; private by default and fixture-actor ownership checked.                                                                        |
-| Webhooks               | Dispute/payment/refund types use `msg_`, `account_id`, `api_version_date`, current data and Standard Webhooks signatures; verify with `unwrapWebhook` from `@whop/sdk/helpers`. Events and deliveries are explicit test actions.                  |
+| Webhooks               | Dispute, dispute-alert, payment and refund types use `msg_`, `account_id`, `api_version_date`, current data and Standard Webhooks signatures; verify with `unwrapWebhook` from `@whop/sdk/helpers`. Events and deliveries are explicit test actions.                  |
 | Backfill               | Forward and backward keyset pagination (`first`/`after`/`last`/`before`), account/status filters, date bounds and supported sorting. The SDK async iterator terminates on the last page.                                                                    |
 | Failures               | Locked evidence returns HTTP 400; missing records return 404; bad documents leave the old packet unchanged. `prepareError(Error, 'retrieve_dispute', { attributes: { status: 429 } })` injects a one-shot SDK-visible HTTP error.                 |
 
@@ -128,10 +129,10 @@ are placeholders; use the HTTP wrapper for byte downloads and delayed processing
 In-process webhook delivery remains an explicit test action. The HTTP wrapper
 adds delayed updates and automatic retries without an external queue.
 
-The five-area adapter now covers 36 operations; see the [complete HTTP guide](http/README.md#complete-current-api-scope)
+The six-area adapter now covers 38 operations; see the [complete HTTP guide](http/README.md#complete-current-api-scope)
 for payment actions, webhook management, multipart evidence and seed controls.
 Unseeded payment creation, legacy unpinned webhook payloads and event data outside
-the dispute/payment/refund areas return local 501 errors. The adapter does not parse/merge PDFs, count pages, re-encode images,
+the dispute, dispute-alert, payment and refund areas return local 501 errors. The adapter does not parse/merge PDFs, count pages, re-encode images,
 moderate uploads or run generated-defense/processor workflows. Preflight estimates
 cover the ordinary seller-file path; generated-response/Dispute Fighter bypasses
 are not reproduced. Some error wording, storage timing and capability URL details

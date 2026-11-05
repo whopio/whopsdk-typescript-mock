@@ -1,0 +1,26 @@
+{
+  "account": { "title": "Synthetic dispute alerts" },
+  "scenarios": [
+    {
+      "payment": { "total": 40, "created_at": "2026-10-01T00:00:00Z", "metadata": { "order_id": "alert-order-001" } },
+      "dispute": null,
+      "alerts": [{ "type": "early_fraud_warning", "source": "tc40", "card_brand": "visa", "reported_at": "2026-10-02T00:00:00Z" }]
+    },
+    {
+      "payment": { "total": 25, "created_at": "2026-10-01T00:00:00Z" },
+      "dispute": null,
+      "alerts": [{ "type": "dispute_alert", "source": "ethoca", "category": "customer_dispute", "fee": 15, "reported_at": "2026-10-03T00:00:00Z" }]
+    },
+    {
+      "payment": { "total": 60, "created_at": "2026-10-01T00:00:00Z", "auto_refunded": true },
+      "dispute": null,
+      "refunds": [{ "amount": 60, "status": "succeeded" }],
+      "alerts": [{ "type": "rapid_dispute_resolution", "source": "rdr", "category": "fraud", "card_brand": "visa", "reported_at": "2026-10-04T00:00:00Z" }]
+    },
+    {
+      "payment": { "total": 80, "created_at": "2026-10-01T00:00:00Z" },
+      "dispute": { "reason": "product_not_received" },
+      "alerts": [{ "type": "dispute_alert", "source": "cdrn", "reported_at": "2026-10-05T00:00:00Z" }]
+    }
+  ]
+}

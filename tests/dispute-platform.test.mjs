@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, afterEach, test } from "node:test";
 import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
 import { WhopClient } from "@whop/sdk";
 import { unwrapWebhook } from "@whop/sdk/helpers";
 import {
@@ -524,6 +525,249 @@ test("seed precision limits reject excessive allocation atomically", async () =>
     const result = await control("seed", { scenarios: [{}, scenario] });
     assert.equal(result.status, 400, JSON.stringify(result.body));
     assert.match(result.body.error.message, /<= 100/);
+    assert.deepEqual(
+      (await control("status", undefined, "GET")).body.resources,
+      before,
+    );
+  }
+});
+
+test("seeded dispute alerts filter, sort, page, scope and notify over HTTP", async () => {
+  const seeded = await control("seed", {
+    account: { id: "biz_alerts" },
+    scenarios: [
+      {
+        payment: {
+          id: "pay_alert_efw",
+          total: 40,
+          created_at: "2026-10-01T00:00:00Z",
+        },
+        dispute: null,
+        alerts: [
+          {
+            id: "dspa_alert_efw",
+            type: "early_fraud_warning",
+            source: "tc40",
+            card_brand: "Visa",
+            reported_at: "2026-10-02T00:00:00Z",
+            created_at: "2026-10-02T01:00:00Z",
+          },
+          {
+            id: "dspa_alert_cdrn",
+            type: "dispute_alert",
+            source: "cdrn",
+            category: "customer_dispute",
+            amount: 25,
+            fee: 15,
+            reported_at: "2026-10-03T00:00:00Z",
+            created_at: "2026-10-03T01:00:00Z",
+          },
+        ],
+      },
+      {
+        payment: {
+          id: "pay_alert_rdr",
+          total: 60,
+          auto_refunded: true,
+          created_at: "2026-10-01T00:00:00Z",
+        },
+        dispute: null,
+        alerts: [
+          {
+            id: "dspa_alert_rdr",
+            type: "rapid_dispute_resolution",
+            reported_at: "2026-10-04T00:00:00Z",
+            created_at: "2026-10-04T01:00:00Z",
+          },
+        ],
+      },
+    ],
+  });
+  assert.equal(seeded.status, 201, JSON.stringify(seeded.body));
+  assert.deepEqual(
+    seeded.body.scenarios.map((row) => [row.dispute_id, row.alert_ids]),
+    [
+      [null, ["dspa_alert_efw", "dspa_alert_cdrn"]],
+      [null, ["dspa_alert_rdr"]],
+    ],
+  );
+  const api = client(seeded.body.credentials.api_token);
+  assert.equal((await api.disputes.list({})).data.length, 0);
+  const ids = async (query) =>
+    (await api.disputeAlerts.list(query)).data.map((row) => row.id);
+  assert.deepEqual(await ids({}), [
+    "dspa_alert_rdr",
+    "dspa_alert_cdrn",
+    "dspa_alert_efw",
+  ]);
+  assert.deepEqual(await ids({ type: "early_fraud_warning" }), [
+    "dspa_alert_efw",
+  ]);
+  assert.deepEqual(await ids({ payment_id: "pay_alert_rdr" }), [
+    "dspa_alert_rdr",
+  ]);
+  assert.deepEqual(await ids({ order: "amount", direction: "asc" }), [
+    "dspa_alert_cdrn",
+    "dspa_alert_efw",
+    "dspa_alert_rdr",
+  ]);
+  assert.deepEqual(
+    await ids({ order: "reported_at", created_after: "2026-10-02T12:00:00Z" }),
+    ["dspa_alert_rdr", "dspa_alert_cdrn"],
+  );
+  const paged = [];
+  for await (const row of await api.disputeAlerts.list({ first: 1 }))
+    paged.push(row.id);
+  assert.deepEqual(paged, await ids({}));
+
+  const fraud = await api.disputeAlerts.retrieve({ id: "dspa_alert_efw" });
+  assert.deepEqual(
+    [
+      fraud.account_id,
+      fraud.payment_id,
+      fraud.category,
+      fraud.card_brand,
+      fraud.amount,
+      fraud.fee_charged,
+      fraud.fee,
+      fraud.issuer,
+      fraud.transaction_at,
+    ],
+    [
+      "biz_alerts",
+      "pay_alert_efw",
+      "fraud",
+      "visa",
+      40,
+      false,
+      null,
+      null,
+      "2026-10-01T00:00:00Z",
+    ],
+  );
+  const notice = await api.disputeAlerts.retrieve({ id: "dspa_alert_cdrn" });
+  assert.equal(notice.fee_charged, true);
+  assert.deepEqual(notice.fee, {
+    amount: "15.00",
+    currency: "usd",
+    decimals: 2,
+    display_decimals: 2,
+  });
+  const rdr = await api.disputeAlerts.retrieve({ id: "dspa_alert_rdr" });
+  assert.equal(rdr.source, "rdr");
+  assert.equal(rdr.auto_refunded, true);
+
+  for (const query of [
+    { type: "chargeback" },
+    { order: "evidence_due_at" },
+    { created_after: "yesterday" },
+  ])
+    await assert.rejects(
+      api.disputeAlerts.list(query),
+      (error) => error.statusCode === 400,
+    );
+  await assert.rejects(
+    api.disputeAlerts.retrieve({ id: "dspa_missing" }),
+    (error) => error.statusCode === 404,
+  );
+  for (const token of [
+    seeded.body.credentials.read_only_token,
+    seeded.body.credentials.no_email_token,
+  ])
+    assert.equal((await client(token).disputeAlerts.list({})).data.length, 3);
+  await assert.rejects(
+    client(credentials.apiToken).disputeAlerts.retrieve({
+      id: "dspa_alert_efw",
+    }),
+    (error) => error.statusCode === 403,
+  );
+  assert.equal(
+    (await client(credentials.apiToken).disputeAlerts.list({})).data.length,
+    0,
+  );
+
+  const event = await control("events", {
+    type: "dispute_alert.created",
+    resource_id: "dspa_alert_efw",
+    deliver: true,
+  });
+  assert.equal(event.status, 201, JSON.stringify(event.body));
+  assert.equal(received.length, 1);
+  assert.equal(received[0].type, "dispute_alert.created");
+  assert.equal(received[0].account_id, "biz_alerts");
+  assert.deepEqual(received[0].data, fraud);
+  assert.deepEqual(
+    (await control("status", undefined, "GET")).body.resources
+      .dispute_alert_ids,
+    ["dspa_alert_efw", "dspa_alert_cdrn", "dspa_alert_rdr"],
+  );
+});
+
+test("the example alert seed covers each alert type, with and without a chargeback", async () => {
+  const example = JSON.parse(
+    await readFile(
+      new URL("../examples/http/dispute-alerts.seed.json", import.meta.url),
+    ),
+  );
+  const seeded = await control("seed", example);
+  assert.equal(seeded.status, 201, JSON.stringify(seeded.body));
+  const api = client(seeded.body.credentials.api_token);
+  const alerts = (await api.disputeAlerts.list({ order: "reported_at" })).data;
+  assert.deepEqual(
+    alerts.map((row) => [row.type, row.fee_charged]),
+    [
+      ["dispute_alert", false],
+      ["rapid_dispute_resolution", false],
+      ["dispute_alert", true],
+      ["early_fraud_warning", false],
+    ],
+  );
+  assert.equal((await api.disputes.list({})).data.length, 1);
+  const refunded = await api.payments.retrieve({ id: alerts[1].payment_id });
+  assert.equal(refunded.substatus, "refunded");
+  assert.equal(alerts[1].auto_refunded, true);
+});
+
+test("alert seeds reject fees on fraud warnings and impossible timelines atomically", async () => {
+  const before = (await control("status", undefined, "GET")).body.resources;
+  for (const [alert, message] of [
+    [{ type: "early_fraud_warning", fee: 15 }, /never charged a fee/],
+    [
+      { type: "early_fraud_warning", category: "customer_dispute" },
+      /always have category fraud/,
+    ],
+    [{ type: "dispute_alert", fee_charged: true }, /needs an explicit fee/],
+    [
+      { type: "dispute_alert", fee_charged: false, fee: 15 },
+      /fee must be null when fee_charged is false/,
+    ],
+    [{ type: "dispute_alert", source: "visa" }, /source/],
+    [
+      { type: "dispute_alert", payment_id: "pay_elsewhere" },
+      /additional properties/,
+    ],
+    [
+      {
+        reported_at: "2026-10-05T00:00:00Z",
+        created_at: "2026-10-04T00:00:00Z",
+      },
+      /reported_at must not be later than created_at/,
+    ],
+    [
+      {
+        transaction_at: "2026-10-06T00:00:00Z",
+        reported_at: "2026-10-05T00:00:00Z",
+      },
+      /transaction_at must not be later than reported_at/,
+    ],
+    [{ reported_at: "2026-01-01T00:00:00Z" }, /backdate the payment/],
+    [{ id: "dspt_not_an_alert" }, /Invalid dispute_alert fixture id/],
+  ]) {
+    const result = await control("seed", {
+      scenarios: [{ dispute: null }, { dispute: null, alerts: [alert] }],
+    });
+    assert.equal(result.status, 400, JSON.stringify([alert, result.body]));
+    assert.match(result.body.error.message, message);
     assert.deepEqual(
       (await control("status", undefined, "GET")).body.resources,
       before,

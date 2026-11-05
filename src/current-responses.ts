@@ -274,6 +274,92 @@ export function refundResponse(
   return result;
 }
 
+const LEGACY_ALERT_TYPES: Record<string, Whop.DisputeAlert.Type> = {
+  DISPUTE: "dispute_alert",
+  DISPUTE_RDR: "rapid_dispute_resolution",
+  FRAUD: "early_fraud_warning",
+};
+
+/** Public alert fields win; older helper fixtures fall back to alert_type, charge_for_alert and transaction_date. */
+export function disputeAlertResponse(
+  record: ResourceRecord,
+  store: Store,
+): ResourceRecord {
+  const paymentId = (record.payment_id ?? object(record.payment).id ?? null) as
+    | string
+    | null;
+  const p = paymentId ? store.find("payment", paymentId) : undefined;
+  const type = (record.type ??
+    LEGACY_ALERT_TYPES[String(record.alert_type)] ??
+    "dispute_alert") as Whop.DisputeAlert.Type;
+  // Early fraud warnings are never billed.
+  const feeCharged =
+    type !== "early_fraud_warning" &&
+    Boolean(
+      record.fee_charged ?? record.charge_for_alert ?? record.fee != null,
+    );
+  const charged = p
+    ? (p.final_amount ?? p.presentment_total ?? p.total ?? p.amount)
+    : undefined;
+  const reported = record.amount ?? charged ?? 0;
+  const legacyDate = Number.isFinite(
+    Date.parse(String(record.transaction_date)),
+  )
+    ? String(record.transaction_date)
+    : null;
+  const brand =
+    record.card_brand !== undefined
+      ? record.card_brand
+      : (p?.card_brand ??
+        object(object(p?.payment_instrument).card).brand ??
+        null);
+  const createdAt = String(record.created_at);
+  const result = {
+    id: String(record.id),
+    type,
+    source: (record.source !== undefined
+      ? record.source
+      : type === "rapid_dispute_resolution"
+        ? "rdr"
+        : null) as Whop.DisputeAlert.Source | null,
+    amount: Number(object(reported).amount ?? reported),
+    currency: String(
+      record.currency ?? object(charged).currency ?? p?.currency ?? "usd",
+    ).toLowerCase(),
+    card_brand: brand == null ? null : String(brand).toLowerCase(),
+    issuer: null,
+    account_id: (p?.account_id ??
+      p?.company_id ??
+      record.account_id ??
+      record.company_id ??
+      null) as string | null,
+    payment_id: paymentId,
+    product_id: (p
+      ? (p.product_id ?? object(p.product).id ?? null)
+      : (record.product_id ?? null)) as string | null,
+    fee_charged: feeCharged,
+    fee: feeCharged && record.fee != null ? money(record.fee) : null,
+    // Reflects the payment, whichever flow refunded it.
+    auto_refunded:
+      p?.auto_refunded === true || p?.substatus === "auto_refunded",
+    reported_at: String(record.reported_at ?? createdAt),
+    transaction_at: (record.transaction_at !== undefined
+      ? record.transaction_at
+      : (legacyDate ?? p?.paid_at ?? p?.created_at ?? null)) as string | null,
+    created_at: createdAt,
+    updated_at: String(record.updated_at ?? createdAt),
+  } satisfies Whop.DisputeAlert;
+  // category is newer than SDK 2.7.0; the vendored public schema requires it.
+  const category = (
+    record.category !== undefined
+      ? record.category
+      : type === "early_fraud_warning"
+        ? "fraud"
+        : null
+  ) as "fraud" | "customer_dispute" | null;
+  return { ...result, category };
+}
+
 export function evidenceResponse(record: ResourceRecord): ResourceRecord {
   const nested = object(record.evidence);
   const result: ResourceRecord = {};

@@ -68,11 +68,17 @@ function setup() {
   return { session, helper, stack, fetch, call, covered };
 }
 
-test("every one of the 36 public documented operations produces its specified response", async () => {
+test("every one of the 38 public documented operations produces its specified response", async () => {
   const { session, helper, stack, fetch, call, covered } = setup();
   const dspt = stack.dispute.id,
     pay = stack.payment.id;
   const refund = helper.createRefund({ payment_id: pay, amount: 2 });
+  const alert = helper.createDisputeAlert({
+    company_id: stack.company.id,
+    payment_id: pay,
+    type: "early_fraud_warning",
+    source: "tc40",
+  });
   for (const [path, template] of [
     ["/disputes", "/disputes"],
     ["/disputes/summary", "/disputes/summary"],
@@ -84,6 +90,8 @@ test("every one of the 36 public documented operations produces its specified re
     [`/payments/${pay}/fees`, "/payments/{id}/fees"],
     ["/refunds", "/refunds"],
     [`/refunds/${refund.id}`, "/refunds/{id}"],
+    ["/dispute_alerts", "/dispute_alerts"],
+    [`/dispute_alerts/${alert.id}`, "/dispute_alerts/{id}"],
   ])
     await call("GET", template, path);
   await call("PATCH", "/disputes/{id}", `/disputes/${dspt}`, {
@@ -309,8 +317,50 @@ test("every one of the 36 public documented operations produces its specified re
   const expected = Object.entries(contract.paths).flatMap(([path, methods]) =>
     Object.keys(methods).map((method) => `${method.toUpperCase()} ${path}`),
   );
-  assert.equal(expected.length, 36);
+  assert.equal(expected.length, 38);
   assert.deepEqual([...covered].sort(), expected.sort());
+});
+
+test("registered hooks receive dispute_alert.created and alert test payloads", async () => {
+  const { session, helper, stack, call } = setup();
+  const alert = helper.createDisputeAlert({
+    company_id: stack.company.id,
+    payment_id: stack.payment.id,
+    type: "early_fraud_warning",
+  });
+  const received = [];
+  session.currentApi.webhooks.configure(async (url, init) => {
+    received.push({ body: init.body, headers: init.headers });
+    return new Response("OK");
+  });
+  const hook = await call("POST", "/webhooks", "/webhooks", {
+    resource_id: stack.company.id,
+    url: "https://example.test/webhook",
+    events: ["dispute_alert.created"],
+    api_version_date: "2026-11-04",
+  });
+  await call("POST", "/webhooks/{id}/test", `/webhooks/${hook.id}/test`, {
+    event: "dispute_alert.created",
+  });
+  WhopMock.emitWebhookEvent("dispute.created", {
+    data: { id: stack.dispute.id },
+  });
+  WhopMock.emitWebhookEvent("dispute_alert.created", {
+    data: { id: alert.id },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  const events = received.map(({ body, headers }) =>
+    unwrapWebhook(body, { key: hook.webhook_secret, headers }),
+  );
+  assert.deepEqual(
+    events.map((event) => [event.type, event.data.id]),
+    [
+      ["dispute_alert.created", alert.id],
+      ["dispute_alert.created", alert.id],
+    ],
+  );
+  assert.equal(events[1].account_id, stack.company.id);
+  assert.equal(events[1].data.category, "fraud");
 });
 
 test("payment filters, summary and total counts share the same seeded population", async () => {
@@ -714,25 +764,34 @@ test("receipt searches handle short queries, permissions, membership and card fi
   assert.deepEqual(await ids("Ada", noEmail), [stack.payment.id]);
 });
 
-test("all eleven local lifecycle events carry public resource shapes and SDK-verifiable signatures", () => {
+test("all twelve local lifecycle events carry public resource shapes and SDK-verifiable signatures", () => {
   const { helper, stack } = setup();
   const refund = helper.createRefund({
     payment_id: stack.payment.id,
     amount: 10,
   });
+  const alert = helper.createDisputeAlert({
+    company_id: stack.company.id,
+    payment_id: stack.payment.id,
+    type: "dispute_alert",
+  });
   const subjects = {
     dispute: stack.dispute.id,
+    dispute_alert: alert.id,
     payment: stack.payment.id,
     refund: refund.id,
   };
-  assert.equal(contract.webhook_events.length, 9);
+  assert.equal(contract.webhook_events.length, 10);
   for (const type of [
     ...contract.webhook_events,
     "refund.created",
     "refund.updated",
   ]) {
     const resource = type.split(".")[0];
-    const name = resource[0].toUpperCase() + resource.slice(1);
+    const name = resource
+      .split("_")
+      .map((word) => word[0].toUpperCase() + word.slice(1))
+      .join("");
     // Public webhook exports omit envelope schemas. Validate resource data and
     // explicitly test the mock envelope/signature without claiming full parity.
     const schema = { $ref: `#/components/schemas/${name}` };

@@ -8,6 +8,7 @@ const DEFAULT_PREFIXES: Record<string, string> = {
   membership: 'mem_',
   payment: 'pay_',
   dispute: 'dspt_',
+  dispute_alert: 'dspa_',
   file: 'file_',
   payment_method: 'pm_',
   setup_intent: 'setup_',
@@ -43,7 +44,7 @@ export class IdGenerator {
 
   generate(resourceName: string): string {
     const prefix = this.prefixFor(resourceName);
-    const length = ['company', 'user', 'payment', 'dispute', 'refund', 'file'].includes(
+    const length = ['company', 'user', 'payment', 'dispute', 'dispute_alert', 'refund', 'file'].includes(
       resourceName
     )
       ? Math.max(1, 18 - prefix.length)

@@ -25,7 +25,7 @@ curl http://127.0.0.1:4100/_test/seed \
 
 The response contains `api_base_url`, `api_version_date`, `account_id`,
 `credentials.api_token`, `credentials.read_only_token`,
-`credentials.no_email_token`, and the created dispute/payment/refund IDs in
+`credentials.no_email_token`, and the created dispute/payment/refund/alert IDs in
 `scenarios`. Use the returned API token for this merchant's normal API calls;
 the built-in primary-merchant token cannot read the newly created merchant.
 The seed command intentionally prints these generated local test keys.
@@ -44,7 +44,8 @@ For example, a complete custom seed request is:
 ```
 
 Each scenario automatically links one payment, one dispute and zero or more
-refunds. Supply custom IDs if useful, or let the fixture engine generate them.
+refunds and [dispute alerts](#seed-dispute-alerts). Set `dispute` to `null` for a
+payment without a chargeback. Supply custom IDs if useful, or let the fixture engine generate them.
 Amounts, customer/context fields, dates, statuses, reason codes, evidence text,
 payment instruments and other accepted response fields can be overridden. The
 seed endpoint uses the vendored current response schemas to validate fields;
@@ -91,6 +92,51 @@ settlement/charge ratio and integer minor-unit arithmetic. Account/payment links
 and computed dispute lock/acceptance fields are managed by the harness. An
 `evidence_due_at` value is the public deadline, after Whop's lead-time adjustment.
 
+### Seed dispute alerts
+
+A dispute alert is an issuer's warning about a settled payment before any
+chargeback. Add `alerts` to a scenario; each one links to that scenario's payment
+and account. [`dispute-alerts.seed.json`](dispute-alerts.seed.json) covers each
+alert type, with and without a chargeback:
+
+```bash
+npm run seed:mock -- examples/http/dispute-alerts.seed.json
+```
+
+A minimal scenario:
+
+```json
+{
+  "scenarios": [{
+    "payment": { "total": 40, "created_at": "2026-10-01T00:00:00Z" },
+    "dispute": null,
+    "alerts": [{ "type": "early_fraud_warning", "source": "tc40", "reported_at": "2026-10-02T00:00:00Z" }]
+  }]
+}
+```
+
+Each scenario in the response lists its `alert_ids`. Read alerts with
+`GET /api/v1/dispute_alerts` and `GET /api/v1/dispute_alerts/{id}`, or
+`client.disputeAlerts` in the SDK. The list filters by `account_id`, `payment_id`,
+`type`, `created_after` and `created_before`, sorts by `created_at`, `reported_at`
+or `amount`, and pages like the other lists. All test tokens include
+`payment:dispute_alert:read`.
+
+`type` defaults to `dispute_alert`. `amount` and `currency` default to the
+payment's charge. `account_id`, `payment_id`, `product_id` and `auto_refunded`
+follow the payment, so set `auto_refunded` on the payment. Without its own
+`transaction_at`, an alert reports on the payment's `paid_at` or `created_at`.
+Numeric fees are USD. Seeds enforce the documented rules: early fraud warnings
+always have category `fraud` and never carry a fee; `fee` is present exactly when
+`fee_charged` is true; and `transaction_at`, `reported_at` and `created_at` must
+not run backwards.
+
+Send `dispute_alert.created` with `POST /_test/events` and the alert ID; hooks
+subscribed to it receive it automatically. Alerts are fixture records. No network
+alert program runs, Whop's automatic refunds are not simulated, and a
+`rapid_dispute_resolution` alert does not change its payment, so seed the matching
+refund yourself.
+
 ## Exercise dispute API functionality
 
 Run `npm run smoke:disputes` against the running service. It imports fresh custom
@@ -133,8 +179,8 @@ behavior/schema and loopback HTTP tests. Everything uses synthetic fixtures in t
 same Node setup. HTTP tests need permission to bind local sockets.
 
 The references are SDK 2.7.0 and the public docs.whop.com pages. The November 4
-schema audit reads 50 official reference pages and covers 36 operations with 57
-referenced schemas. Local regressions also exercise grants and email visibility,
+schema audit, extended on November 5 with the dispute-alert pages, reads 54 official
+reference pages and covers 38 operations with 58 referenced schemas. Local regressions also exercise grants and email visibility,
 pagination, deadlines, evidence replacement, multipart uploads, idempotency and
 retry behavior. They do not prove deployed backend or processor parity.
 
@@ -159,7 +205,7 @@ an incomplete check. Review the diff and run `test:all` after regeneration.
 
 The operation inventory is stored in `vendor/current-api-schemas.json`, with
 request fields, query fields, documented response codes and referenced schemas.
-`tests/current-surface.test.mjs` calls all 36 operations and validates real response
+`tests/current-surface.test.mjs` calls all 38 operations and validates real response
 bodies against that independently generated contract. `check:docs` downloads the
 current official references again and fails on new routes or changed shapes;
 network failures are reported as an incomplete check. It does not update the mock.
@@ -167,6 +213,7 @@ network failures are reported as an incomplete check. It does not update the moc
 | Area | Operations covered |
 | --- | --- |
 | Disputes (7) | List, retrieve, summary, update, upload evidence, submit, accept |
+| Dispute alerts (2) | List and retrieve; seed alerts with the scenario importer |
 | Payments (14) | List, retrieve, summary, fees, status, create, update, capture, refund, retry, void, generate PDF, resume, update return URL |
 | Refunds (2) | List and retrieve; create refunds through `POST /payments/{id}/refund` |
 | Files (4) | Create, list, retrieve, complete multipart upload |
@@ -272,11 +319,11 @@ Set a well-formed payload date. The same version fallback described below applie
 to registered deliveries, with the requested date in the payload and effective
 modeled date in `x-whop-mock-api-version`. Unpinned webhook metadata is preserved
 as null, but delivery returns a local 501 because historical unpinned payloads are
-not implemented. Events outside dispute/payment/refund are outside this mock's
+not implemented. Events outside the dispute, dispute-alert, payment and refund areas are outside this mock's
 payload scope. `testable_events` currently lists all modeled v1 event names rather
 than just subscriptions; treat that as a fixture choice.
 
-The nine indexed dispute/payment webhook pages omit envelope schemas.
+The ten indexed dispute, dispute-alert and payment webhook pages omit envelope schemas.
 `check:docs` reports that gap; tests validate public resource-data schemas and
 SDK signatures but cannot certify complete envelope parity. Local delivery logs
 preserve any valid JSON response, including arrays/scalars, although
@@ -398,7 +445,7 @@ Use a separate Node process/port for independent concurrent suites.
 | `POST /_test/seed` | Import custom account/case JSON and return merchant-scoped test keys |
 | `POST /_test/reset` | `{}` clears files, timers, events, idempotency and pending submissions |
 | `POST /_test/scenarios` | `{"amount":80,"refund_amount":15,"deliver":true}` creates linked payment/dispute/refund fixtures and a signed created event; `deliver` defaults false |
-| `POST /_test/events` | `{"type":"dispute.created","resource_id":"dspt_mock_open","deliver":true}` |
+| `POST /_test/events` | `{"type":"dispute.created","resource_id":"dspt_mock_open","deliver":true}`; also `dispute_alert.created` with a `dspa_` ID |
 | `POST /_test/events/{id}/deliver` | `{}` manually replays the saved ID and data snapshot |
 | `POST /_test/submissions/{id}` | `{"outcome":"accepted"}` or `{"outcome":"rejected"}` after submission |
 | `PATCH /_test/disputes/{id}` | `{"status":"won"}` changes a synthetic outcome and schedules an updated event |

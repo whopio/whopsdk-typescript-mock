@@ -1,6 +1,77 @@
 {
   "api_version_date": "2026-11-04-1",
   "paths": {
+    "/dispute_alerts": {
+      "get": {
+        "operationId": "listDisputeAlerts",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"account_id","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"payment_id","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {"enum":["early_fraud_warning","dispute_alert","rapid_dispute_resolution"],"type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "first",
+            "required": false,
+            "schema": {"default":20,"maximum":100,"type":"integer"}
+          },
+          {"in":"query","name":"after","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"last","required":false,"schema":{"maximum":100,"type":"integer"}},
+          {"in":"query","name":"before","required":false,"schema":{"type":"string"}},
+          {
+            "in": "query",
+            "name": "order",
+            "required": false,
+            "schema": {"default":"created_at","enum":["created_at","reported_at","amount"],"type":"string"}
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {"default":"desc","enum":["asc","desc"],"type":"string"}
+          },
+          {"in":"query","name":"created_before","required":false,"schema":{"type":"string"}},
+          {"in":"query","name":"created_after","required":false,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "properties": {
+              "data": {"items":{"$ref":"#/components/schemas/DisputeAlert"},"type":"array"},
+              "page_info": {
+                "properties": {
+                  "end_cursor": {"type":["string","null"]},
+                  "has_next_page": {"type":"boolean"},
+                  "has_previous_page": {"type":"boolean"},
+                  "start_cursor": {"type":["string","null"]}
+                },
+                "required": ["end_cursor","start_cursor","has_next_page","has_previous_page"],
+                "type": "object"
+              }
+            },
+            "required": ["data","page_info"],
+            "type": "object"
+          },
+          "400": {},
+          "401": {},
+          "403": {}
+        }
+      }
+    },
+    "/dispute_alerts/{id}": {
+      "get": {
+        "operationId": "retrieveDisputeAlert",
+        "parameters": [
+          {"in":"header","name":"Api-Version-Date","required":false,"schema":{"type":"string"}},
+          {"in":"path","name":"id","required":true,"schema":{"type":"string"}}
+        ],
+        "responses": {"200":{"$ref":"#/components/schemas/DisputeAlert"},"401":{},"403":{},"404":{}}
+      }
+    },
     "/disputes": {
       "get": {
         "operationId": "listDisputes",
@@ -1360,9 +1431,43 @@
       }
     }
   },
-  "webhook_events": ["dispute.created","dispute.updated","payment.authorized","payment.canceled","payment.created","payment.failed","payment.pending","payment.requires_action","payment.succeeded"],
+  "webhook_events": ["dispute.created","dispute.updated","dispute_alert.created","payment.authorized","payment.canceled","payment.created","payment.failed","payment.pending","payment.requires_action","payment.succeeded"],
   "components": {
     "schemas": {
+      "DisputeAlert": {
+        "properties": {
+          "account_id": {"type":["string","null"]},
+          "amount": {"type":"number"},
+          "auto_refunded": {"type":"boolean"},
+          "card_brand": {"type":["string","null"]},
+          "category": {"enum":["fraud","customer_dispute",null],"type":["string","null"]},
+          "created_at": {"type":"string"},
+          "currency": {"type":"string"},
+          "fee": {"oneOf":[{"$ref":"#/components/schemas/Money"},{"type":"null"}]},
+          "fee_charged": {"type":"boolean"},
+          "id": {"type":"string"},
+          "issuer": {"deprecated":true,"type":["string","null"]},
+          "payment_id": {"type":["string","null"]},
+          "product_id": {"type":["string","null"]},
+          "reported_at": {"type":"string"},
+          "source": {"enum":["ethoca","cdrn","rdr","tc40","safe","paypal",null],"type":["string","null"]},
+          "transaction_at": {"type":["string","null"]},
+          "type": {"enum":["early_fraud_warning","dispute_alert","rapid_dispute_resolution"],"type":"string"},
+          "updated_at": {"type":"string"}
+        },
+        "required": ["id","type","source","category","amount","currency","card_brand","issuer","account_id","payment_id","product_id","fee_charged","fee","auto_refunded","reported_at","transaction_at","created_at","updated_at"],
+        "type": "object"
+      },
+      "Money": {
+        "properties": {
+          "amount": {"type":"string"},
+          "currency": {"type":"string"},
+          "decimals": {"type":"integer"},
+          "display_decimals": {"type":"integer"}
+        },
+        "required": ["currency","amount","decimals","display_decimals"],
+        "type": "object"
+      },
       "Dispute": {
         "properties": {
           "acceptable": {"type":"boolean"},
@@ -1478,16 +1583,6 @@
       "FileMultipartUrl": {
         "properties": {"part_number":{"type":"integer"},"url":{"type":"string"}},
         "required": ["part_number","url"],
-        "type": "object"
-      },
-      "Money": {
-        "properties": {
-          "amount": {"type":"string"},
-          "currency": {"type":"string"},
-          "decimals": {"type":"integer"},
-          "display_decimals": {"type":"integer"}
-        },
-        "required": ["currency","amount","decimals","display_decimals"],
         "type": "object"
       },
       "DisputeIssuerComment": {
