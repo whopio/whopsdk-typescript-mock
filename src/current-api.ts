@@ -1125,24 +1125,14 @@ export class CurrentApi {
     const direction = query.get("direction") || "desc";
     if (!["asc", "desc"].includes(direction))
       bad("direction must be one of: asc, desc");
-    const model = {
-      dispute: "Dispute",
-      payment: "Receipt",
-      refund: "Refund",
-      file: "Attachment",
-    }[resource];
+    // Cursor signature: public resource, sort key and direction. Payments
+    // ordered by created_at page on the stable sequence alone.
     const column =
-      order === "evidence_due_at"
-        ? "due_date"
-        : resource === "payment" && order === "created_at"
-          ? "id"
-          : resource === "payment" && order === "amount"
-            ? "final_amount"
-            : order;
+      resource === "payment" && order === "created_at" ? "id" : order;
     const signature = createHash("sha256")
       .update(
         [
-          model,
+          resource,
           `${column}:${direction}:column`,
           ...(column === "id" ? [] : [`id:${direction}:column`]),
         ].join(","),

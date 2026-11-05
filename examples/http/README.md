@@ -226,6 +226,7 @@ Use `POST /api/v1/webhooks` with a JSON body like this and the merchant API toke
 | --- | --- |
 | Hook created through `POST /api/v1/webhooks`, including automatic test-control events, `/test` and API replay | That hook's `webhook_secret`, returned only at creation |
 | Demo delivery via `deliver: true`, admin event replay, and the signed `delivery` preview in `/_test/events` | Server-level `WHOP_MOCK_WEBHOOK_SECRET` (`ws_local_mock_webhook_test_only` by default) |
+| Delayed `dispute.updated` demo callback after an accepted `/_test/submissions/{id}`, `PATCH /_test/disputes/{id}` or `POST /api/v1/disputes/{id}/accept`; sent to `WHOP_MOCK_WEBHOOK_URL` whenever it is set, regardless of `deliver` | Server-level `WHOP_MOCK_WEBHOOK_SECRET`; a receiver holding a registered hook's secret must expect and reject this extra callback (the matching subscription still delivers separately with its own secret) |
 
 For a registered hook, save its secret in your receiver and **omit `deliver` (or
 set it to false)** when calling `/_test/events` or `/_test/scenarios`. Matching
@@ -397,7 +398,8 @@ the key in progress and returning 409 on retry. `"phase":"handled"` records a
 handled failure. These phases are fixture controls, never production API headers.
 
 Accepted submissions and changed dispute statuses schedule `dispute.updated`
-after a one-minute mock delay. Rejection leaves the dispute
+after a one-minute mock delay. That delayed callback is a demo delivery signed
+with the server-level secret (see [Webhook signing secrets](#webhook-signing-secrets)). Rejection leaves the dispute
 awaiting response. `disputes.accept()` simulates concession for supported
 processors and schedules an update. Reset/close clears pending timers. The tests
 explicitly accelerate these timers; the service retains its default timing.
@@ -436,7 +438,7 @@ fixture metadata. Seller-file preflight estimates do not cover the generated
 response/Dispute Fighter bypasses. Some error messages and URL/timing details are
 approximations. New payment creation consumes a seeded request/result pair;
 unseeded creation and legacy unpinned webhook delivery return local 501 errors.
-Receipt search covers seeded names, emails, IDs and card fields. Subscription,
+Payment search covers seeded names, emails, IDs and card fields. Subscription,
 license-key and Discord branches need membership fixtures in the in-process Store
 (`stripe_subscription_id`, `license_key`, `discord_account`); the HTTP DTO importer
 does not construct external-account relationships or run an external lookup.

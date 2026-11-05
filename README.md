@@ -212,8 +212,9 @@ demo webhook signing secret is `ws_local_mock_webhook_test_only`.
 **Registered webhooks use their own `webhook_secret` from the creation response.**
 When using a registered webhook, omit `deliver` on test event/scenario controls:
 the matching subscription delivers automatically. `deliver: true` additionally
-sends a demo callback signed with the server-level secret. See the
-[signing-secret guide](examples/http/README.md#webhook-signing-secrets).
+sends a demo callback signed with the server-level secret, and so does the
+delayed `dispute.updated` callback after accepted submissions and status changes.
+See the [signing-secret guide](examples/http/README.md#webhook-signing-secrets).
 
 To connect your existing service, use the [local HTTP walkthrough](examples/http/README.md).
 The [in-process example](examples/README.md) documents fixture setup. Both use
