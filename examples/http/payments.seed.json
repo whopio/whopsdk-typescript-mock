@@ -1,0 +1,20 @@
+{
+  "account": { "id": "biz_payment_cases", "title": "Synthetic payment scenarios" },
+  "scenarios": [
+    {
+      "payment": { "id": "pay_capture_demo", "total": 50, "status": "authorized", "substatus": "requires_capture", "client_secret": "local_capture_buyer" },
+      "runtime": { "manual_capture": true, "refund_status": "pending" }
+    },
+    {
+      "payment": { "id": "pay_refund_demo", "total": 100, "refundable": true },
+      "runtime": { "refund_status": "pending" }
+    },
+    {
+      "payment": { "total": 49, "status": "open", "substatus": "pending" },
+      "payment_status": { "status": "processing" },
+      "create_payment": {
+        "request": { "account_id": "biz_payment_cases", "variant_id": "plan_local_demo", "member_id": "mber_local_demo", "payment_method_id": "payt_local_demo" }
+      }
+    }
+  ]
+}

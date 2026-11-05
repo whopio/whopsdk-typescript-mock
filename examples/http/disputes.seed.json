@@ -1,0 +1,23 @@
+{
+  "account": { "title": "My dispute test merchant" },
+  "scenarios": [
+    {
+      "payment": {
+        "total": 99.99,
+        "customer_email": "buyer@example.test",
+        "metadata": { "order_id": "my-test-order-001" }
+      },
+      "dispute": {
+        "reason": "fraudulent",
+        "buyer": { "name": "Test Buyer" },
+        "evidence": { "product_description": "A synthetic digital purchase" }
+      },
+      "refunds": [{ "amount": 20, "status": "succeeded" }]
+    },
+    { "payment": { "total": 25 }, "dispute": { "reason": "product_not_received" } },
+    { "dispute": { "evidence_due_at": "2020-01-01T00:00:00Z" } },
+    { "dispute": { "status": "won" } },
+    { "dispute": { "status": "warning_needs_response", "evidence_due_at": null } },
+    { "dispute": { "status": "under_review", "evidence_submitted_at": "2026-01-01T00:00:00Z" } }
+  ]
+}

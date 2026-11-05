@@ -1,7 +1,22 @@
 node_modules/
 dist/
+*.tsbuildinfo
 *.log
 .DS_Store
 coverage/
+.nyc_output/
+__pycache__/
+*.py[cod]
+*.tgz
+
+# Local credentials; sanitized templates can be checked in.
 .env
-.env.local
+.env.*
+!.env.example
+!.env.sample
+
+# Generated reports, agent scratch output and user-specific test data.
+/docs/verification/
+/.local/
+agent-output/
+test-results/

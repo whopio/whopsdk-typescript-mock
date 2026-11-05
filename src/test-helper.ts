@@ -2,6 +2,7 @@ import type { ResourceRecord } from './types.js';
 import { ResourceNames } from './types.js';
 import { Session } from './session.js';
 import { WebhookEvents } from './webhook-events.js';
+import { EVIDENCE_SLOTS, EVIDENCE_TEXT_FIELDS } from './current-responses.js';
 import type {
   WebhookEvent,
   WebhookEventHandler,
@@ -10,7 +11,6 @@ import type {
 
 /**
  * Helper for creating test data with proper relationships.
- * Mirrors the Ruby TestHelper API.
  */
 export class TestHelper {
   private session: Session;
@@ -150,7 +150,7 @@ export class TestHelper {
 
   /**
    * Create a complete payout stack for testing withdrawal lifecycle.
-   * Mimics the backend relationship: Company -> LedgerAccount -> PayoutAccount -> PayoutMethod
+   * Creates linked company, ledger-account, payout-account and payout-method fixtures.
    */
   createPayoutStack(attributes: Record<string, unknown> = {}): {
     company: ResourceRecord;
@@ -161,7 +161,7 @@ export class TestHelper {
     const companyAttrs = (attributes.company ?? {}) as Record<string, unknown>;
     const company = this.createCompany(companyAttrs);
 
-    // LedgerAccount belongs to company (resource_owner)
+    // The ledger-account fixture belongs to the company.
     const ledgerAccount = this.createLedgerAccount({
       company_id: company.id,
       resource_owner_id: company.id,
@@ -171,7 +171,7 @@ export class TestHelper {
       ...((attributes.ledger_account ?? {}) as Record<string, unknown>),
     });
 
-    // PayoutAccount links to ledger accounts (many-to-many in backend)
+    // The payout-account fixture links to its ledger accounts.
     const payoutAccount = this.createPayoutAccount({
       company_id: company.id,
       ledger_account_id: ledgerAccount.id,
@@ -228,11 +228,16 @@ export class TestHelper {
   // ========== Disputes & Resolution Cases ==========
 
   createDispute(attributes: Record<string, unknown> = {}): ResourceRecord {
-    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const company = this.ensureCompany(attributes.company, (attributes.account_id ?? attributes.company_id) as string);
     const { company: _company, ...rest } = attributes;
     const attrs = {
+      ...Object.fromEntries([...Object.keys(EVIDENCE_SLOTS), ...EVIDENCE_TEXT_FIELDS].map(key => [key, null])),
+      reason: 'fraudulent',
+      uses_platform_cancellation_policy: true,
+      uses_platform_refund_policy: true,
+      evidence_due_at: attributes.needs_response_by ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       ...rest,
-      company_id: attributes.company_id ?? company?.id,
+      company_id: attributes.account_id ?? attributes.company_id ?? company?.id,
       status: attributes.status ?? 'needs_response',
     };
     return this.createViaRequest('/disputes', attrs);
@@ -262,18 +267,19 @@ export class TestHelper {
   }
 
   createPayment(attributes: Record<string, unknown> = {}): ResourceRecord {
-    const company = this.ensureCompany(attributes.company, attributes.company_id as string);
+    const company = this.ensureCompany(attributes.company, (attributes.account_id ?? attributes.company_id) as string);
     const { company: _company, ...rest } = attributes;
     const status = (attributes.status ?? 'paid') as string;
     const amount = (attributes.amount ?? attributes.total ?? 10.0) as number;
     const attrs = {
       ...rest,
-      company_id: attributes.company_id ?? company?.id,
+      company_id: attributes.account_id ?? attributes.company_id ?? company?.id,
       status,
       substatus: attributes.substatus ?? (status === 'paid' ? 'succeeded' : 'pending'),
-      total: attributes.total ?? amount,
+      total: attributes.total === undefined ? amount : attributes.total,
       amount,
       currency: attributes.currency ?? 'usd',
+      refunded_at: attributes.refunded_at ?? null,
     };
     return this.seed(ResourceNames.PAYMENT, attrs);
   }
@@ -300,7 +306,8 @@ export class TestHelper {
     const dispute = this.createDispute({
       company_id: company.id,
       payment_id: payment.id,
-      amount: payment.total,
+      amount: typeof payment.total === 'object' && payment.total !== null
+        ? Number((payment.total as Record<string, unknown>).amount) : payment.total,
       currency: payment.currency,
       ...((attributes.dispute ?? {}) as Record<string, unknown>),
     });
@@ -411,9 +418,11 @@ export class TestHelper {
       ((attributes.payment as Record<string, unknown> | undefined)?.id as string | undefined);
     const { payment_id: _paymentId, payment: _payment, ...rest } = attributes;
     return this.seed(ResourceNames.REFUND, {
+      provider: 'stripe', provider_created_at: null, reference_status: null, reference_type: null, reference_value: null,
       ...rest,
       status: attributes.status ?? 'succeeded',
       currency: attributes.currency ?? 'usd',
+      payment_id: paymentId,
       payment: paymentId ? { id: paymentId } : undefined,
     });
   }

@@ -2,6 +2,8 @@ import { Configuration } from './configuration.js';
 import { Session } from './session.js';
 import { ClientPatcher } from './client-patcher.js';
 import { TestHelper } from './test-helper.js';
+import type { FetchOptions } from './current-api.js';
+import { signWebhook } from './webhook-delivery.js';
 import type {
   WhopMockConfiguration,
   ResourceRecord,
@@ -17,6 +19,9 @@ export { WhopMockError, NotFoundError } from './error-injector.js';
 export { ResourceNames } from './types.js';
 export { Store } from './store.js';
 export { TestHelper } from './test-helper.js';
+export { API_VERSION_DATE } from './current-responses.js';
+export { signWebhook } from './webhook-delivery.js';
+export type { FetchOptions } from './current-api.js';
 export {
   WebhookEvents,
   KNOWN_WEBHOOK_EVENTS,
@@ -69,6 +74,7 @@ function getSession(): Session {
  * Start a new mock session
  */
 export function start(options: { specPath?: string } = {}): Session {
+  currentSession?.currentApi.webhooks.close();
   const specPath = options.specPath ?? globalConfiguration.specPath;
   currentSession = Session.build({
     specPath,
@@ -81,7 +87,23 @@ export function start(options: { specPath?: string } = {}): Session {
  * Stop the current mock session
  */
 export function stop(): void {
+  currentSession?.currentApi.webhooks.close();
+  currentSession?.webhookEmitter.clear();
   currentSession = null;
+}
+
+/** Use the current SDK's public transport: new WhopClient({ token: 'test', fetch: createFetch() }). */
+export function createFetch(options: FetchOptions = {}): typeof fetch {
+  const session = getSession();
+  return async (input, init) => {
+    if (currentSession !== session) throw new Error('This mock fetch belongs to an ended session');
+    return session.currentApi.fetch(input, init, options);
+  };
+}
+
+/** Explicitly simulate the asynchronous processor result; this is not an API endpoint. */
+export function completeDisputeSubmission(id: string, outcome: 'accepted' | 'rejected'): ResourceRecord {
+  return getSession().currentApi.completeDisputeSubmission(id, outcome);
 }
 
 /**
@@ -264,6 +286,9 @@ export default {
   resetConfiguration,
   start,
   stop,
+  createFetch,
+  completeDisputeSubmission,
+  signWebhook,
   requester,
   install,
   uninstall,

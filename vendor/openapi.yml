@@ -1384,7 +1384,7 @@ components:
             id:
               type: string
     Dispute:
-      x-resource-prefix: "disp_"
+      x-resource-prefix: "dspt_"
       type: object
       required:
         - id
@@ -1784,7 +1784,7 @@ components:
         page_info:
           type: object
     Refund:
-      x-resource-prefix: "ref_"
+      x-resource-prefix: "rf_"
       type: object
       properties:
         id:

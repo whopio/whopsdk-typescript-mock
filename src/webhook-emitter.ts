@@ -3,6 +3,8 @@ import { ResourceNames } from './types.js';
 import { Store } from './store.js';
 import { IdGenerator } from './id-generator.js';
 import { isKnownWebhookEvent } from './webhook-events.js';
+import { randomUUID } from 'node:crypto';
+import { API_VERSION_DATE, disputeResponse, paymentResponse, refundResponse } from './current-responses.js';
 
 /** The envelope Whop delivers to a webhook URL. Mirrors the `Event` schema. */
 export interface WebhookEvent {
@@ -10,9 +12,12 @@ export interface WebhookEvent {
   api_version: string;
   type: string;
   timestamp: string;
-  created_at: string;
+  api_version_date?: string;
+  account_id?: string;
+  created_at?: string;
   company_id?: string;
   data: ResourceRecord;
+  previous_attributes?: ResourceRecord;
 }
 
 /** Context passed alongside an emitted event. */
@@ -28,10 +33,15 @@ export type WebhookEventHandler = (
 
 export interface EmitOptions {
   company_id?: string;
+  account_id?: string;
+  /** Dispute/payment/refund event types default to the tested SDK pin; older dates retain company_id. */
+  api_version_date?: string;
   data?: ResourceRecord;
   /** Override the generated timestamp/created_at (ISO 8601). */
   timestamp?: string;
   api_version?: string;
+  /** Explicit captured old values; omitted when no capture is supplied. */
+  previous_attributes?: ResourceRecord;
 }
 
 /**
@@ -76,24 +86,37 @@ export class WebhookEmitter {
    */
   emit(type: string, options: EmitOptions = {}): WebhookEvent {
     const now = options.timestamp ?? new Date().toISOString();
-    const data: ResourceRecord = { ...(options.data ?? {}) };
-    const companyId = options.company_id ?? (data.company_id as string | undefined);
+    let data: ResourceRecord = structuredClone(options.data ?? {});
+    const currentEvent = ['dispute', 'payment', 'refund'].includes(type.split('.')[0]);
+    const version = options.api_version_date ?? (currentEvent ? API_VERSION_DATE : undefined);
+    const modern = version !== undefined && version >= '2026-08-14';
+    if (modern && data.id) {
+      const resource = type.split('.')[0];
+      const record = this.store.find(resource, String(data.id)) ?? data;
+      if (resource === 'dispute') data = disputeResponse(record, this.store);
+      if (resource === 'payment') data = paymentResponse(record);
+      if (resource === 'refund') data = refundResponse(record, this.store);
+    }
+    const companyId = options.account_id ?? options.company_id ?? (data.account_id ?? data.company_id) as string | undefined;
 
     const event: WebhookEvent = {
-      id: this.idGenerator.generate(ResourceNames.EVENT),
+      id: version ? `msg_${randomUUID().replaceAll('-', '').slice(0, 24)}` : this.idGenerator.generate(ResourceNames.EVENT),
       api_version: options.api_version ?? 'v1',
+      api_version_date: version,
       type,
       timestamp: now,
-      created_at: now,
-      company_id: companyId,
+      ...(!version ? { created_at: now } : {}),
+      ...(modern ? { account_id: companyId } : { company_id: companyId }),
       data,
+      ...(options.previous_attributes && Object.keys(options.previous_attributes).length
+        ? { previous_attributes: structuredClone(options.previous_attributes) } : {}),
     };
 
     // Persist so `GET /events/{id}` can retrieve it.
     this.store.insert(ResourceNames.EVENT, event as unknown as ResourceRecord);
 
     const context: WebhookEventContext = {
-      webhooks: this.matchingWebhooks(type),
+      webhooks: this.matchingWebhooks(type, companyId),
     };
 
     for (const listener of this.listeners) {
@@ -109,9 +132,11 @@ export class WebhookEmitter {
   }
 
   /** Stored webhooks whose `events`/`testable_events` include `type` (or `*`). */
-  private matchingWebhooks(type: string): ResourceRecord[] {
+  private matchingWebhooks(type: string, accountId?: string): ResourceRecord[] {
     return this.store.list(ResourceNames.WEBHOOK).filter((webhook) => {
       if (webhook.enabled === false) return false;
+      const owner = webhook.account_id ?? webhook.company_id;
+      if (owner && owner !== accountId) return false;
       const subscribed = [
         ...this.asStringArray(webhook.events),
         ...this.asStringArray(webhook.testable_events),
